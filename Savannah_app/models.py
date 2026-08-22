@@ -52,6 +52,21 @@ class DoctorWorkingHours(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+class Appointment(models.Model):
+    patient= models.ForeignKey(Patient, on_delete=models.PROTECT,related_name='appointments')
+    doctor = models.ForeignKey(Doctor, on_delete=models.PROTECT, related_name='appointments')
+    clinical_services=models.ForeignKey(Speciality,on_delete=models.PROTECT, related_name='appointments')
+    appointment_date=models.DateField()
+    appointment_time=models.TimeField()
+    additional_information=models.TextField(blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+         constraints=[
+              models.UniqueConstraint(fields=['doctor', 'appointment_date', 'appointment_time'],
+                                      name='unique_doctor_appointment_slot')
+         ]
+
 
 
 
