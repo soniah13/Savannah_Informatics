@@ -40,3 +40,11 @@ def get_eligible_doctors(clinical_service:ClinicalService, appointment_date, app
             continue
         eligible_doctors.append(doctor)
     return eligible_doctors
+
+
+# This function ensures that the appointment is atleast one hour from the current time.
+def appointment_atleast_one_hour_ahead(appointment_date, appointment_time):
+    appointment_dateTime = timezone.make_aware(datetime.combine(appointment_date, appointment_time))
+    minimum_booking_time = timezone.now() + Booking_Notice
+    return appointment_dateTime >= minimum_booking_time
+
