@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from django.utils import timezone
-from models import *
+from ..models import Appointment, ClinicalService, Doctor, DoctorWorkingHours
 
 
 Appointment_Duration = timedelta(minutes=30)
@@ -52,6 +52,7 @@ def appointment_atleast_one_hour_ahead(appointment_date, appointment_time):
 def generate_slots(start_time, end_time):
     current =  datetime.combine(timezone.localdate(),start_time)
     end = datetime.combine(timezone.localdate(), end_time)
+
     slots = []
 
     while current + Appointment_Duration <= end:
@@ -64,7 +65,7 @@ def get_available_slots(clinical_service:ClinicalService, appointment_date):
     if appointment_date < timezone.localdate():
         return []
     weekday = appointment_date.weekday()
-    working_hours = DoctorWorkingHours.objects.filter(weekday=weekday, doctor__speciality=clinical_service.speciality, doctor__is_active=True).distinct()
+    working_hours = DoctorWorkingHours.objects.filter(weekday=weekday, doctor__Specialities=clinical_service.speciality, doctor__is_active=True).distinct()
     available_slots = set()
     for working_hour in working_hours:
         slots = generate_slots(working_hour.start_time, working_hour.end_time)
