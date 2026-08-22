@@ -48,3 +48,31 @@ def appointment_atleast_one_hour_ahead(appointment_date, appointment_time):
     minimum_booking_time = timezone.now() + Booking_Notice
     return appointment_dateTime >= minimum_booking_time
 
+# Generate 30min slots that meet the set boundaries
+def generate_slots(start_time, end_time):
+    current =  datetime.combine(timezone.localdate(),start_time)
+    end = datetime.combine(timezone.localdate(), end_time)
+    slots = []
+
+    while current + Appointment_Duration <= end:
+        slots.append(current.time())
+        current += Appointment_Duration
+    return slots
+
+#Function to return all current bookable slots on a given date
+def get_available_slots(clinical_service:ClinicalService, appointment_date):
+    if appointment_date < timezone.localdate():
+        return []
+    weekday = appointment_date.weekday()
+    working_hours = DoctorWorkingHours.objects.filter(weekday=weekday, doctor__speciality=clinical_service.speciality, doctor__is_active=True).distinct()
+    available_slots = set()
+    for working_hour in working_hours:
+        slots = generate_slots(working_hour.start_time, working_hour.end_time)
+        for slot in slots:
+            if not appointment_atleast_one_hour_ahead(appointment_date,slot):
+                continue
+            eligible_doctors = get_eligible_doctors(clinical_service=clinical_service, appointment_date=appointment_date, appointment_time=slot)
+            if eligible_doctors: 
+                available_slots.add(slot)
+    return sorted(available_slots)
+
