@@ -20,3 +20,28 @@ def get_last_assignment(doctor):
     ).order_by(
         "-appointment_date","-appointment_time",
     ).first()
+
+# function to choose a doctor who has gone longest without an appointment
+# and give priority to doctors who have never been assigned
+def choose_by_rotation(doctors):
+    never_assigned = []
+    assigned = []
+    for doctor in doctors:
+        last_appointment = get_last_assignment(doctor)
+        if not last_appointment:
+            never_assigned.append(doctor)
+        else:
+            assigned.append((
+                doctor, 
+                last_appointment.appointment_date,
+                last_appointment.appointment_time
+            ))
+    # give priority to doctors with zero appointment
+    if never_assigned:
+        return never_assigned[0]
+    # sort assigned doctors by oldest appointment date/time first
+    assigned.sort(key=lambda item:(item[1], item[2]))
+
+    # return the doctor from the oldest assignement to the lastest assignement
+    return assigned[0][0]
+
