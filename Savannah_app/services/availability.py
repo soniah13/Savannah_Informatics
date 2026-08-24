@@ -8,9 +8,9 @@ Booking_Notice = timedelta(hours=1)
 
 
 
-# This function check if the doctor is available/scheduled to work during that precified slot
+# This function check if the doctor is available/scheduled to work during that predefined slot
 # It returns a boolean value (True/False)
-def Doctor_is_available_slot(doctor:Doctor, appointment_date, appointment_time):
+def Doctor_is_available_during_slot(doctor:Doctor, appointment_date, appointment_time):
     weekday = appointment_date.weekday()
     slot_start = appointment_time
     slot_end = (datetime.combine(appointment_date, appointment_time) + Appointment_Duration).time()
@@ -39,12 +39,12 @@ def doctor_has_conflicts(doctor:Doctor, appointment_date, appointment_time, excl
 # returns doctors whocan serve the requested slot depending on their speciality and service requested
 # by checking if doctor is active, has required speciality, works during the requested slot and has no existing appointment in the slot
 def get_eligible_doctors(clinical_service:ClinicalService, appointment_date, appointment_time):
-    doctors = (Doctor.objects.filter(Specialities=clinical_service.speciality, is_active=True,).distinct())
+    doctors = Doctor.objects.filter(Specialities=clinical_service.speciality, is_active=True,).distinct()
     eligible_doctors = []
     for doctor in doctors:
-        if not Doctor_is_available_slot(doctor, appointment_date, appointment_time):
+        if not Doctor_is_available_during_slot(doctor, appointment_date, appointment_time):
             continue
-        if conflicting_appointment(doctor, appointment_date, appointment_time):
+        if doctor_has_conflicts(doctor, appointment_date, appointment_time):
             continue
         eligible_doctors.append(doctor)
     return eligible_doctors
@@ -68,8 +68,8 @@ def generate_slots(start_time, end_time):
         current += Appointment_Duration
     return slots
 
-#Function to return all current bookable slots on a given date
-def get_available_slots(clinical_service:ClinicalService, appointment_date):
+#Function to return all open slots for a service on a given date where atleast 1 doctor is free
+def get_service_available_slots(clinical_service, appointment_date):
     if appointment_date < timezone.localdate():
         return []
     weekday = appointment_date.weekday()
@@ -78,9 +78,9 @@ def get_available_slots(clinical_service:ClinicalService, appointment_date):
     for working_hour in working_hours:
         slots = generate_slots(working_hour.start_time, working_hour.end_time)
         for slot in slots:
-            if not appointment_atleast_one_hour_ahead(appointment_date,slot):
+            if not is_bookable_time(appointment_date,slot):
                 continue
-            eligible_doctors = get_eligible_doctors(clinical_service=clinical_service, appointment_date=appointment_date, appointment_time=slot)
+            eligible_doctors = get_eligible_doctors(clinical_service, appointment_date=appointment_date, appointment_time=slot)
             if eligible_doctors: 
                 available_slots.add(slot)
     return sorted(available_slots)
