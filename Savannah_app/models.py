@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import Q
+
 
 # Create your models here.
 class Patient(models.Model):
@@ -59,12 +61,16 @@ class Appointment(models.Model):
     appointment_date=models.DateField()
     appointment_time=models.TimeField()
     additional_information=models.TextField(blank=True)
+    cancelled_at=models.DateTimeField(null=True, blank=True)
+    cancellation_reason=models.TextField(blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
 
     class Meta:
          constraints=[
               models.UniqueConstraint(fields=['doctor', 'appointment_date', 'appointment_time'],
-                                      name='unique_doctor_appointment_slot')
+                                      condition=models.Q(cancelled_at__isnull=True),
+                                      name='unique_active_doctor_appointment_slot'),
+
          ]
 
 
