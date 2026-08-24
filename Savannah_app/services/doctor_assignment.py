@@ -45,3 +45,21 @@ def choose_by_rotation(doctors):
     # return the doctor from the oldest assignement to the lastest assignement
     return assigned[0][0]
 
+# function to select doctor based on general eligibility, previous assignment prefence, fair rotation
+def assign_doctor(patient, clinical_service, appointment_date, appointment_time, exclude_appointment_id=None):
+    eligible_doctors= get_eligible_doctors(
+        clinical_service=clinical_service,
+        appointment_date=appointment_date,
+        appointment_time=appointment_time,
+        exclude_appointment_id=exclude_appointment_id,
+    )
+    if not eligible_doctors:
+        return None
+    previous_doctor = get_previous_doctor(patient=patient, clinical_service=clinical_service)
+    # check if prefed doctor is eligible and available
+    if previous_doctor in eligible_doctors:
+        return previous_doctor
+    # otherwise choose by rotation
+    return choose_by_rotation(eligible_doctors)
+
+
