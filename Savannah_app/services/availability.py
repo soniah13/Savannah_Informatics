@@ -21,11 +21,19 @@ def Doctor_is_available_slot(doctor:Doctor, appointment_date, appointment_time):
                                              end_time_gte = slot_end,).exists()
 
 
-# Since every appointment is 30min, matching the same doctor/date and time is enough to use to detect a conflict
-def conflicting_appointment(doctor:Doctor, appointment_date, appointment_time):
-    return Appointment.objects.filter(doctor=doctor,
-                                      appointment_date=appointment_date,
-                                      appointment_time=appointment_time).exists()
+# check if doctor has an active appointment in this slot.
+# cancelled appointments are ignored, making the slot available again
+def doctor_has_conflicts(doctor:Doctor, appointment_date, appointment_time, exclude_apppointment_id=None):
+    queryset = Appointment.objects.filter(
+        doctor=doctor,
+        appointment_date=appointment_date,
+        appointment_time=appointment_time,
+        cancelled_at__isnull=True
+        )
+    # thisis used during rescheduling to prevent the appoinment from conflicting with itself
+    if exclude_apppointment_id:
+        queryset = queryset.exclude(id=exclude_apppointment_id)
+    return queryset.exists()
 
 
 # returns doctors whocan serve the requested slot depending on their speciality and service requested
