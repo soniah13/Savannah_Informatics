@@ -9,18 +9,22 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = ['full_name', 'email', 'phone_number', 'address']
 
 class BookAppointmentSerializer(serializers.Serializer):
-    patient = PatientSerializer()
-    doctor_id = serializers.IntegerField()
+    full_name=serializers.CharField(max_length=200)
+    email=serializers.EmailField()
+    phone_number=serializers.CharField(max_length=20)
+    address=serializers.CharField()
+
+    doctor_name = serializers.CharField()
     appointment_date = serializers.DateField()
     appointment_time = serializers.TimeField()
     additional_information = serializers.CharField(required=False, allow_blank=True)
 
     def validate_doctor_id(self, value):
-        try:
-            return Doctor.objects.get(id=value, is_active=True)
-        except Doctor.DoesNotExist:
-            raise serializers.ValidationError("Active doctor with this ID does not exist")
-
+            # using both filter and first just incase doctors share a name
+        doctor =  Doctor.objects.filter(full_name__isexact=value, is_active=True).firt()
+        if not doctor:
+            raise serializers.ValidationError("Active doctor with this name does not exist")
+        return doctor
 
     def create(self, validated_data):
         patient_data = validated_data.pop('patient')
