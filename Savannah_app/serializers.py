@@ -27,17 +27,18 @@ class BookAppointmentSerializer(serializers.Serializer):
         return doctor
 
     def create(self, validated_data):
-        patient_data = validated_data.pop('patient')
         doctor = validated_data.pop('doctor_id')
 
         try:
             appointment = create_appointment(
                 doctor=doctor,
-                full_name=patient_data['full_name'],
-                email=patient_data['email'],
-                phone_number=patient_data['phone_number'],
-                address=patient_data['address'],
-                **validated_data
+                full_name=validated_data.pop('full_name'),
+                email=validated_data.pop('email'),
+                phone_number=validated_data.pop('phone_number'),
+                address=validated_data.pop('address'),
+                appointment_date=validated_data.pop("appointment_date"),
+                appointment_time=validated_data.pop("appointment_time"), 
+                additional_information=validated_data.get("additional_information")
 
             )
             return appointment
