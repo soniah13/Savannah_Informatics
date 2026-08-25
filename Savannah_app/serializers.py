@@ -47,3 +47,8 @@ class AppointmentResponseSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = ['id', 'appointment_date', 'appointment_time', 'doctor_name', "is_rescheduled", 'cancelled_at']
 
+class CancelAppointmentSerlializer(serializers.Serializer):
+    reason = serializers.CharField(required=True, min_length=5, error_messages={
+        "required":"You must provide a cancellation reason",
+        "blank":"Cancellation reason cannot be empty". 
+    })
