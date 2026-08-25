@@ -3,13 +3,13 @@ from .models import Patient, Doctor, Appointment
 from .services.bookings import create_appointment
 from .exceptions import BookingError
 
-class PatientSerializer(serializers.Serializer):
+class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = ['full_name', 'email', 'phone_number', 'address']
 
 class BookAppointmentSerializer(serializers.Serializer):
-    patient = PatientSerializer
+    patient = PatientSerializer()
     doctor_id = serializers.IntegerField()
     appointment_date = serializers.DateTimeField()
     appointment_time = serializers.TimeField()
