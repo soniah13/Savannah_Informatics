@@ -62,7 +62,7 @@ class Appointment(models.Model):
     additional_information=models.TextField(blank=True)
     cancelled_at=models.DateTimeField(null=True, blank=True)
     cancellation_reason=models.TextField(blank=True)
-    is_rescheduled = models.BooleanField(default=True, help_text="True if this appointment was created by rescheduling an older appointment")
+    is_rescheduled = models.BooleanField(default=False, help_text="True if this appointment was created by rescheduling an older appointment")
     created_at=models.DateTimeField(auto_now_add=True)
 
     class Meta:
