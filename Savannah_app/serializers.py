@@ -11,7 +11,7 @@ class PatientSerializer(serializers.ModelSerializer):
 class BookAppointmentSerializer(serializers.Serializer):
     patient = PatientSerializer()
     doctor_id = serializers.IntegerField()
-    appointment_date = serializers.DateTimeField()
+    appointment_date = serializers.DateField()
     appointment_time = serializers.TimeField()
     additional_information = serializers.CharField(required=False, allow_blank=True)
 
@@ -47,20 +47,20 @@ class AppointmentResponseSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = ['id', 'appointment_date', 'appointment_time', 'doctor_name', "is_rescheduled", 'cancelled_at']
 
-class CancelAppointmentSerlializer(serializers.Serializer):
+class CancelAppointmentSerializer(serializers.Serializer):
     reason = serializers.CharField(required=True, min_length=5, error_messages={
         "required":"You must provide a cancellation reason",
         "blank":"Cancellation reason cannot be empty"
     })
 
-class RescheduleAppointmentSerliazer(serializers.Serializer):
+class RescheduleAppointmentSerializer(serializers.Serializer):
     appointment_date = serializers.DateField(required=True)
     appointment_time = serializers.TimeField(required=True)
 
     def update(self, instance, validated_data):
         try:
             return reschedule_appointment(
-                appoitnemtn=instance, new_date=validated_data['appointment_date'], new_time=validated_data['appointment_time']
+                appointment=instance, new_date=validated_data['appointment_date'], new_time=validated_data['appointment_time']
             )
         except BookingError as e:
             raise serializers.ValidationError(str(e))
