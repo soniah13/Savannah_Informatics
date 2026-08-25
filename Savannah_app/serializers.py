@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Patient, Doctor, Appointment
-from .services.bookings import create_appointment
+from .services.bookings import create_appointment, reschedule_appointment
 from .exceptions import BookingError
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -50,8 +50,17 @@ class AppointmentResponseSerializer(serializers.ModelSerializer):
 class CancelAppointmentSerlializer(serializers.Serializer):
     reason = serializers.CharField(required=True, min_length=5, error_messages={
         "required":"You must provide a cancellation reason",
-        "blank":"Cancellation reason cannot be empty". 
+        "blank":"Cancellation reason cannot be empty"
     })
 
 class RescheduleAppointmentSerliazer(serializers.Serializer):
-    
+    appointment_date = serializers.DateField(required=True)
+    appointment_time = serializers.TimeField(required=True)
+
+    def update(self, instance, validated_data):
+        try:
+            return reschedule_appointment(
+                appoitnemtn=instance, new_date=validated_data['appointment_date'], new_time=validated_data['appointment_time']
+            )
+        except BookingError as e:
+            raise serializers.ValidationError(str(e))
