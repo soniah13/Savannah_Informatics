@@ -36,19 +36,6 @@ def doctor_has_conflicts(doctor:Doctor, appointment_date, appointment_time, excl
     return queryset.exists()
 
 
-# returns doctors whocan serve the requested slot depending on their speciality and service requested
-# by checking if doctor is active, has required speciality, works during the requested slot and has no existing appointment in the slot
-def get_eligible_doctors(clinical_service:ClinicalService, appointment_date, appointment_time):
-    doctors = Doctor.objects.filter(Specialities=clinical_service.speciality, is_active=True,).distinct()
-    eligible_doctors = []
-    for doctor in doctors:
-        if not Doctor_is_available_during_slot(doctor, appointment_date, appointment_time):
-            continue
-        if doctor_has_conflicts(doctor, appointment_date, appointment_time):
-            continue
-        eligible_doctors.append(doctor)
-    return eligible_doctors
-
 
 # This function ensures that the appointment is atleast one hour from the current time.
 def is_bookable_time(appointment_date, appointment_time):
@@ -69,19 +56,19 @@ def generate_slots(start_time, end_time):
     return slots
 
 #Function to return all open slots for a service on a given date where atleast 1 doctor is free
-def get_service_available_slots(clinical_service, appointment_date):
+def get_doctor_available_slots(doctor, appointment_date):
     if appointment_date < timezone.localdate():
         return []
     weekday = appointment_date.weekday()
-    working_hours = DoctorWorkingHours.objects.filter(weekday=weekday, doctor__Specialities=clinical_service.speciality, doctor__is_active=True).distinct()
+    working_hours = DoctorWorkingHours.objects.filter(doctor=doctor,weekday=weekday)
     available_slots = set()
     for working_hour in working_hours:
         slots = generate_slots(working_hour.start_time, working_hour.end_time)
         for slot in slots:
             if not is_bookable_time(appointment_date,slot):
                 continue
-            eligible_doctors = get_eligible_doctors(clinical_service, appointment_date=appointment_date, appointment_time=slot)
-            if eligible_doctors: 
-                available_slots.add(slot)
+            if doctor_has_conflicts(doctor, appointment_date, slot):
+                continue
+            available_slots.add(slot)
     return sorted(available_slots)
 
