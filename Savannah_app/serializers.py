@@ -1,11 +1,41 @@
 from rest_framework import serializers
-from .models import *
+from .models import Patient, Doctor
 from .services.bookings import create_appointment
 from .exceptions import BookingError
 
-class BookAppointmentSerializer(serializers.Serializer):
-    full_name = serializers.CharField(max_length=200)
-    email = serializers.EmailField()
-    phone_number = serializers.CharField(max_length=20)
-    address = serializers.CharField()
+class PatientSerializer(serializers.Serializer):
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'email', 'phone_number', 'address']
 
+class BookAppointmentSerializer(serializers.Serializer):
+    patient = PatientSerializer
+    doctor_id = serializers.IntegerField()
+    appointment_date = serializers.DateTimeField()
+    appointment_time = serializers.TimeField()
+    additional_information = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_doctor_id(self, value):
+        try:
+            return Doctor.objects.get(id=value, is_active=True)
+        except Doctor.DoesNotExist:
+            raise serializers.ValidationError("Active doctor with this ID does not exist")
+
+
+    def create(self, validated_data):
+        patient_data = validated_data.pop('patient')
+        doctor = validated_data.pop('doctor_id')
+
+        try:
+            appointment = create_appointment(
+                doctor=doctor,
+                full_name=patient_data['full_name'],
+                email=patient_data['email'],
+                phone_number=patient_data['phone_number'],
+                address=patient_data['address'],
+                **validated_data
+
+            )
+            return appointment
+        except BookingError as e:
+            raise serializers.ValidationError(str(e))
