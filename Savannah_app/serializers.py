@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patient, Doctor
+from .models import Patient, Doctor, Appointment
 from .services.bookings import create_appointment
 from .exceptions import BookingError
 
@@ -39,3 +39,11 @@ class BookAppointmentSerializer(serializers.Serializer):
             return appointment
         except BookingError as e:
             raise serializers.ValidationError(str(e))
+
+# serializer that makes doctors name readable and gives appoinment booking response cleaner
+class AppointmentResponseSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source="doctor.full_name", read_only=True)
+    class Meta:
+        model = Appointment
+        fields = ['id', 'appointment_date', 'appointment_time', 'doctor_name', "is_rescheduled", 'cancelled_at']
+
