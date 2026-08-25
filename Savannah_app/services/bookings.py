@@ -1,9 +1,7 @@
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db import IntegrityError, transaction
 from ..models import Appointment, Patient
 from .availability import is_bookable_time, Doctor_is_available_during_slot, doctor_has_conflicts
-from .doctor_assignment import assign_doctor
 from ..exceptions import AppointmentCancelledError, ConflictError, InvalidBookingError, SlotUnavailableError
 
 
