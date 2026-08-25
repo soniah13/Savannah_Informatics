@@ -52,3 +52,6 @@ class CancelAppointmentSerlializer(serializers.Serializer):
         "required":"You must provide a cancellation reason",
         "blank":"Cancellation reason cannot be empty". 
     })
+
+class RescheduleAppointmentSerliazer(serializers.Serializer):
+    
