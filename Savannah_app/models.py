@@ -13,14 +13,14 @@ class Patient(models.Model):
     updated_at=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.full_name()
+        return self.full_name
 
 class Speciality(models.Model):
     speciality_name=models.CharField(max_length=100)
     speciality_description=models.TextField(blank=True)
 
     def __str__(self):
-            return self.speciality_name()
+            return self.speciality_name
 
 class ClinicalService(models.Model):
     service_name=models.CharField(max_length=150)
@@ -28,7 +28,7 @@ class ClinicalService(models.Model):
     service_description=models.TextField(blank=True)
 
     def __str__(self):
-            return self.service_name()
+            return self.service_name
 
 class Doctor(models.Model):
     full_name=models.CharField(max_length=200)
@@ -38,7 +38,7 @@ class Doctor(models.Model):
     is_active=models.BooleanField(default=True)
 
     def __str__(self):
-            return self.full_name()
+            return self.full_name
 
 class DoctorWorkingHours(models.Model):
     class Weekday(models.IntegerChoices):
@@ -57,7 +57,6 @@ class DoctorWorkingHours(models.Model):
 class Appointment(models.Model):
     patient= models.ForeignKey(Patient, on_delete=models.PROTECT,related_name='appointments')
     doctor = models.ForeignKey(Doctor, on_delete=models.PROTECT, related_name='appointments')
-    clinical_services=models.ForeignKey(Speciality,on_delete=models.PROTECT, related_name='appointments')
     appointment_date=models.DateField()
     appointment_time=models.TimeField()
     additional_information=models.TextField(blank=True)
