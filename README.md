@@ -188,18 +188,19 @@ The system provides endpoints for managing doctors, working schedules, availabil
 
 These include:  
 ```text 
-Doctor Management 
-- Create doctor
-- Configure available working days
-- Configure working hours for each working day
+Base URL: /api/v1/
 
-Appointment Management 
-- Create appointment
+POST /doctors/
+- Create a doctor with available working days and working hours
+
+GET /appointments/
 - Retrieve all appointments
-- Retrieve available appointment times for a selected doctor and date
-- Retrieve patient appointments
-- Cancel appointment
-- Reschedule appointment
+
+GET /doctors/{id}/availability/?date=YYYY-MM-DD
+- Retrieve available 30-minute times for a selected doctor and date
+
+The API also exposes patient and working-hours resources through the same
+versioned base URL.
 ``` 
 
 When creating a doctor, the request includes the doctor's available working days and the working hours for each selected day. The system validates the schedule to ensure that no working day is configured without working hours.  
