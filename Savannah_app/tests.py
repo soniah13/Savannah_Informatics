@@ -87,6 +87,58 @@ class AppointmentEndpointTests(APITestCase):
 		appointment.refresh_from_db()
 		self.assertEqual(str(appointment.appointment_time), '10:00:00')
 
+	def test_reschedule_can_change_to_another_available_doctor(self):
+		self.book_appointment()
+		other_doctor = Doctor.objects.create(
+			full_name='Dr. Katherine Johnson',
+			email='katherine@example.com',
+			phone_number='2223334444',
+		)
+		DoctorWorkingHours.objects.create(
+			doctor=other_doctor,
+			weekday=self.appointment_date.weekday(),
+			start_time='09:00',
+			end_time='12:00',
+		)
+		appointment = Appointment.objects.get()
+
+		response = self.client.patch(
+			reverse('appointment-reschedule', kwargs={'pk': appointment.pk}),
+			{
+				'doctor_name': other_doctor.full_name,
+				'appointment_date': self.appointment_date,
+				'appointment_time': '09:00',
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		appointment.refresh_from_db()
+		self.assertEqual(appointment.doctor_id, other_doctor.pk)
+
+	def test_reschedule_rejects_doctor_who_is_not_working(self):
+		self.book_appointment()
+		other_doctor = Doctor.objects.create(
+			full_name='Dr. Katherine Johnson',
+			email='katherine@example.com',
+			phone_number='2223334444',
+		)
+		appointment = Appointment.objects.get()
+
+		response = self.client.patch(
+			reverse('appointment-reschedule', kwargs={'pk': appointment.pk}),
+			{
+				'doctor_name': other_doctor.full_name,
+				'appointment_date': self.appointment_date,
+				'appointment_time': '09:00',
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		appointment.refresh_from_db()
+		self.assertEqual(appointment.doctor_id, self.doctor.pk)
+
 	def test_doctor_can_be_created_with_working_schedule(self):
 		response = self.client.post(
 			reverse('doctor-list'),

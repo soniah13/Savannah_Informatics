@@ -68,9 +68,10 @@
                 <form id="manage-form" class="form-grid">
                     {% csrf_token %}
                     <label>Appointment ID<input name="appointment_id" type="number" min="1" placeholder="e.g. 1" required></label>
-                    <div></div>
-                    <label>New date<input name="reschedule_date" type="date"></label>
-                    <label>New time<input name="reschedule_time" type="time"></label>
+                    <label>Doctor<select name="doctor_name" id="reschedule-doctor" required><option value="">Choose a doctor</option></select></label>
+                    <label>New date<input name="reschedule_date" id="reschedule-date" type="date" required></label>
+                    <label>Available time<select name="reschedule_time" id="reschedule-time" required disabled><option value="">Choose doctor and date first</option></select></label>
+                    <div class="result wide" id="reschedule-slots" aria-live="polite">Select a doctor and date to see available times.</div>
                     <label class="wide">Cancellation reason<textarea name="reason" rows="2" placeholder="Required to cancel"></textarea></label>
                     <div class="button-row wide"><button type="button" class="secondary" id="reschedule-button">Reschedule</button><button type="button" class="danger" id="cancel-button">Cancel appointment</button></div>
                 </form>

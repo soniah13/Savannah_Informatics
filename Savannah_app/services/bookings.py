@@ -84,18 +84,19 @@ def cancel_appointment(appointment, reason):
     return appointment
 
 @transaction.atomic
-def reschedule_appointment(appointment, new_date, new_time):
+def reschedule_appointment(appointment, new_date, new_time, doctor=None):
     if appointment.cancelled_at is not None:
         raise InvalidBookingError("You cannot reschedule a cancelled appointment")
     if new_date < timezone.localdate():
         raise InvalidBookingError("Appointment date cannot be in the past")
     if not is_bookable_time(new_date, new_time):
         raise InvalidBookingError("Appointment must be booked atleast one hour in advance")
-    if not Doctor_is_available_during_slot(appointment.doctor, new_date, new_time):
+    doctor = doctor or appointment.doctor
+    if not Doctor_is_available_during_slot(doctor, new_date, new_time):
         raise SlotUnavailableError("The soctor does not work during this time slot either choose another doctor or another slot")
 
     if doctor_has_conflicts(
-        appointment.doctor,
+        doctor,
         new_date,
         new_time,
         exclude_apppointment_id=appointment.id,
@@ -104,7 +105,8 @@ def reschedule_appointment(appointment, new_date, new_time):
 
     appointment.appointment_date = new_date
     appointment.appointment_time = new_time
+    appointment.doctor = doctor
     appointment.is_rescheduled = True
-    appointment.save(update_fields=['appointment_date', 'appointment_time', 'is_rescheduled'])
+    appointment.save(update_fields=['appointment_date', 'appointment_time', 'doctor', 'is_rescheduled'])
 
     return appointment

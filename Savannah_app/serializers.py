@@ -179,11 +179,21 @@ class CancelAppointmentSerializer(serializers.Serializer):
 class RescheduleAppointmentSerializer(serializers.Serializer):
     appointment_date = serializers.DateField(required=True)
     appointment_time = serializers.TimeField(required=True)
+    doctor_name = serializers.CharField(required=False)
+
+    def validate_doctor_name(self, value):
+        doctor = Doctor.objects.filter(full_name__iexact=value, is_active=True).first()
+        if not doctor:
+            raise serializers.ValidationError('Active doctor with this name does not exist')
+        return doctor
 
     def update(self, instance, validated_data):
         try:
             return reschedule_appointment(
-                appointment=instance, new_date=validated_data['appointment_date'], new_time=validated_data['appointment_time']
+                appointment=instance,
+                new_date=validated_data['appointment_date'],
+                new_time=validated_data['appointment_time'],
+                doctor=validated_data.get('doctor_name'),
             )
         except BookingError as e:
             raise serializers.ValidationError(str(e))

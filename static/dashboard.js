@@ -62,7 +62,7 @@ async function loadPatients() {
 }
 
 async function loadDoctors() {
-    const selects = [$('#availability-doctor'), $('#booking-doctor')];
+    const selects = [$('#availability-doctor'), $('#booking-doctor'), $('#reschedule-doctor')];
     try {
         const doctors = await request('/doctors/');
         doctors.forEach((doctor) => selects.forEach((select) => {
@@ -81,15 +81,15 @@ async function loadDoctors() {
     }
 }
 
-async function loadBookingSlots() {
-    const doctorOption = $('#booking-doctor').selectedOptions[0];
-    const date = $('#booking-date').value;
-    const timeSelect = $('#booking-time');
+async function loadSlots(doctorSelector, dateSelector, timeSelector, resultSelector) {
+    const doctorOption = $(doctorSelector).selectedOptions[0];
+    const date = $(dateSelector).value;
+    const timeSelect = $(timeSelector);
     timeSelect.innerHTML = '<option value="">Loading available times...</option>';
     timeSelect.disabled = true;
     if (!doctorOption?.dataset.doctorId || !date) {
         timeSelect.innerHTML = '<option value="">Choose doctor and date first</option>';
-        showResult('#booking-slots', 'Select a doctor and date to see available times.');
+        showResult(resultSelector, 'Select a doctor and date to see available times.');
         return;
     }
     try {
@@ -98,12 +98,15 @@ async function loadBookingSlots() {
             ? '<option value="">Choose an available time</option>' + data.available_slots.map((slot) => `<option value="${slot}">${slot}</option>`).join('')
             : '<option value="">No available times</option>';
         timeSelect.disabled = !data.available_slots.length;
-        showResult('#booking-slots', data.available_slots.length ? `${data.available_slots.length} available time(s) for ${data.doctor} on ${data.date}.` : 'No available times for this doctor and date.');
+        showResult(resultSelector, data.available_slots.length ? `${data.available_slots.length} available time(s) for ${data.doctor} on ${data.date}.` : 'No available times for this doctor and date.');
     } catch (error) {
         timeSelect.innerHTML = '<option value="">Availability unavailable</option>';
-        showResult('#booking-slots', error.message, false);
+        showResult(resultSelector, error.message, false);
     }
 }
+
+    const loadBookingSlots = () => loadSlots('#booking-doctor', '#booking-date', '#booking-time', '#booking-slots');
+    const loadRescheduleSlots = () => loadSlots('#reschedule-doctor', '#reschedule-date', '#reschedule-time', '#reschedule-slots');
 
 $('#availability-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -126,11 +129,13 @@ $('#booking-form').addEventListener('submit', async (event) => {
 
 $('#booking-doctor').addEventListener('change', loadBookingSlots);
 $('#booking-date').addEventListener('change', loadBookingSlots);
+$('#reschedule-doctor').addEventListener('change', loadRescheduleSlots);
+$('#reschedule-date').addEventListener('change', loadRescheduleSlots);
 
 $('#reschedule-button').addEventListener('click', async () => {
     const data = formData($('#manage-form'));
-    if (!data.appointment_id || !data.reschedule_date || !data.reschedule_time) return showResult('#manage-result', 'Appointment ID, date, and time are required.', false);
-    try { showResult('#manage-result', await request(`/appointments/${data.appointment_id}/reschedule/`, { method: 'PATCH', body: JSON.stringify({ appointment_date: data.reschedule_date, appointment_time: data.reschedule_time }) })); notify('Appointment rescheduled'); loadAppointments(); }
+    if (!data.appointment_id || !data.doctor_name || !data.reschedule_date || !data.reschedule_time) return showResult('#manage-result', 'Appointment ID, doctor, date, and available time are required.', false);
+    try { showResult('#manage-result', await request(`/appointments/${data.appointment_id}/reschedule/`, { method: 'PATCH', body: JSON.stringify({ doctor_name: data.doctor_name, appointment_date: data.reschedule_date, appointment_time: data.reschedule_time }) })); notify('Appointment rescheduled'); loadAppointments(); }
     catch (error) { showResult('#manage-result', error.message, false); }
 });
 
