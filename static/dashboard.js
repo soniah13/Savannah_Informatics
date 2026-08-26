@@ -61,6 +61,50 @@ async function loadPatients() {
     } catch (error) { showResult('#patients-result', error.message, false); }
 }
 
+async function loadDoctors() {
+    const selects = [$('#availability-doctor'), $('#booking-doctor')];
+    try {
+        const doctors = await request('/doctors/');
+        doctors.forEach((doctor) => selects.forEach((select) => {
+            const option = document.createElement('option');
+            option.value = doctor.full_name;
+            option.dataset.doctorId = doctor.id;
+            option.textContent = doctor.full_name;
+            select.appendChild(option);
+        }));
+        doctors.forEach((doctor) => {
+            const option = $('#availability-doctor').querySelector(`[data-doctor-id="${doctor.id}"]`);
+            if (option) option.value = doctor.id;
+        });
+    } catch (error) {
+        showResult('#booking-slots', error.message, false);
+    }
+}
+
+async function loadBookingSlots() {
+    const doctorOption = $('#booking-doctor').selectedOptions[0];
+    const date = $('#booking-date').value;
+    const timeSelect = $('#booking-time');
+    timeSelect.innerHTML = '<option value="">Loading available times...</option>';
+    timeSelect.disabled = true;
+    if (!doctorOption?.dataset.doctorId || !date) {
+        timeSelect.innerHTML = '<option value="">Choose doctor and date first</option>';
+        showResult('#booking-slots', 'Select a doctor and date to see available times.');
+        return;
+    }
+    try {
+        const data = await request(`/doctors/${doctorOption.dataset.doctorId}/availability/?date=${date}`);
+        timeSelect.innerHTML = data.available_slots.length
+            ? '<option value="">Choose an available time</option>' + data.available_slots.map((slot) => `<option value="${slot}">${slot}</option>`).join('')
+            : '<option value="">No available times</option>';
+        timeSelect.disabled = !data.available_slots.length;
+        showResult('#booking-slots', data.available_slots.length ? `${data.available_slots.length} available time(s) for ${data.doctor} on ${data.date}.` : 'No available times for this doctor and date.');
+    } catch (error) {
+        timeSelect.innerHTML = '<option value="">Availability unavailable</option>';
+        showResult('#booking-slots', error.message, false);
+    }
+}
+
 $('#availability-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = formData(event.currentTarget);
@@ -71,10 +115,17 @@ $('#availability-form').addEventListener('submit', async (event) => {
 $('#booking-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = formData(event.currentTarget);
-    delete data.doctor_id;
+    const doctorOption = $('#booking-doctor').selectedOptions[0];
+    if (!doctorOption?.dataset.doctorId || !data.appointment_time) {
+        showResult('#booking-result', 'Choose a doctor, date, and available time first.', false);
+        return;
+    }
     try { showResult('#booking-result', await request('/appointments/', { method: 'POST', body: JSON.stringify(data) })); notify('Appointment booked'); loadAppointments(); loadPatients(); }
     catch (error) { showResult('#booking-result', error.message, false); }
 });
+
+$('#booking-doctor').addEventListener('change', loadBookingSlots);
+$('#booking-date').addEventListener('change', loadBookingSlots);
 
 $('#reschedule-button').addEventListener('click', async () => {
     const data = formData($('#manage-form'));
@@ -94,3 +145,4 @@ $('#refresh-appointments').addEventListener('click', loadAppointments);
 $('#refresh-patients').addEventListener('click', loadPatients);
 loadAppointments();
 loadPatients();
+loadDoctors();
