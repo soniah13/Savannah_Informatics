@@ -94,6 +94,15 @@ def reschedule_appointment(appointment, new_date, new_time, doctor=None):
     if not is_bookable_time(new_date, new_time):
         raise InvalidBookingError("Appointment must be booked atleast one hour in advance")
     doctor = doctor or appointment.doctor
+    if (
+        appointment.clinical_service
+        and not doctor.Specialities.filter(
+            pk=appointment.clinical_service.speciality_id
+        ).exists()
+    ):
+        raise InvalidBookingError(
+            "The selected doctor does not provide this appointment's service."
+        )
     if not Doctor_is_available_during_slot(doctor, new_date, new_time):
         raise SlotUnavailableError("The soctor does not work during this time slot either choose another doctor or another slot")
 

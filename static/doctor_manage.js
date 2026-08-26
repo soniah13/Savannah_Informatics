@@ -78,6 +78,12 @@ function resetForm() {
     buildSchedule();
 }
 
+function loadSpecialities(selected = []) {
+    request('/specialities/').then((specialities) => {
+        $('#doctor-specialities').innerHTML = specialities.map((speciality) => `<option value="${speciality.id}" ${selected.includes(speciality.id) ? 'selected' : ''}>${speciality.speciality_name}</option>`).join('');
+    }).catch((error) => showResult(error.message, false));
+}
+
 function editDoctor(doctor) {
     const form = $('#doctor-form');
     form.doctor_id.value = doctor.id;
@@ -85,6 +91,7 @@ function editDoctor(doctor) {
     form.email.value = doctor.email;
     form.phone_number.value = doctor.phone_number;
     form.is_active.checked = doctor.is_active;
+    [...form.specialities.options].forEach((option) => { option.selected = doctor.specialities.includes(Number(option.value)); });
     $('#form-title').textContent = `Edit ${doctor.full_name}`;
     $('#save-doctor').textContent = 'Save changes';
     $('.method').textContent = 'PATCH';
@@ -115,6 +122,7 @@ $('#doctor-form').addEventListener('submit', async (event) => {
         full_name: form.full_name.value,
         email: form.email.value,
         phone_number: form.phone_number.value,
+        specialities: [...form.specialities.selectedOptions].map((option) => Number(option.value)),
         is_active: form.is_active.checked,
         working_hours: readSchedule(),
     };
@@ -139,4 +147,5 @@ document.addEventListener('change', (event) => {
 $('#clear-form').addEventListener('click', resetForm);
 $('#refresh-doctors').addEventListener('click', loadDoctors);
 buildSchedule();
+loadSpecialities();
 loadDoctors();

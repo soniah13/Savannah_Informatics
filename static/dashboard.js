@@ -65,7 +65,9 @@ async function loadDoctors() {
     const selects = [$('#availability-doctor'), $('#booking-doctor'), $('#reschedule-doctor')];
     try {
         const doctors = await request('/doctors/');
-        doctors.forEach((doctor) => selects.forEach((select) => {
+        window.doctors = doctors;
+        populateBookingDoctors();
+        doctors.forEach((doctor) => selects.filter((select) => select !== $('#booking-doctor')).forEach((select) => {
             const option = document.createElement('option');
             option.value = doctor.full_name;
             option.dataset.doctorId = doctor.id;
@@ -79,6 +81,31 @@ async function loadDoctors() {
     } catch (error) {
         showResult('#booking-slots', error.message, false);
     }
+}
+
+function populateBookingDoctors() {
+    const serviceId = $('#booking-service').value;
+    const service = window.services?.find((item) => String(item.id) === serviceId);
+    const doctors = (window.doctors || []).filter((doctor) => !service || doctor.specialities.includes(service.speciality));
+    $('#booking-doctor').innerHTML = '<option value="">Choose a doctor</option>';
+    doctors.forEach((doctor) => {
+        const option = document.createElement('option');
+        option.value = doctor.full_name;
+        option.dataset.doctorId = doctor.id;
+        option.textContent = doctor.full_name;
+        $('#booking-doctor').appendChild(option);
+    });
+    $('#booking-doctor').value = '';
+    $('#booking-time').innerHTML = '<option value="">Choose doctor and date first</option>';
+    $('#booking-time').disabled = true;
+}
+
+async function loadServices() {
+    try {
+        window.services = await request('/clinical-services/');
+        $('#booking-service').innerHTML = '<option value="">Choose a service</option>' + window.services.map((service) => `<option value="${service.id}">${service.service_name} (${service.speciality_name})</option>`).join('');
+        populateBookingDoctors();
+    } catch (error) { showResult('#booking-slots', error.message, false); }
 }
 
 async function loadSlots(doctorSelector, dateSelector, timeSelector, resultSelector) {
@@ -128,6 +155,7 @@ $('#booking-form').addEventListener('submit', async (event) => {
 });
 
 $('#booking-doctor').addEventListener('change', loadBookingSlots);
+$('#booking-service').addEventListener('change', populateBookingDoctors);
 $('#booking-date').addEventListener('change', loadBookingSlots);
 $('#reschedule-doctor').addEventListener('change', loadRescheduleSlots);
 $('#reschedule-date').addEventListener('change', loadRescheduleSlots);
@@ -151,3 +179,4 @@ $('#refresh-patients').addEventListener('click', loadPatients);
 loadAppointments();
 loadPatients();
 loadDoctors();
+loadServices();

@@ -5,16 +5,25 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Appointment, Doctor, DoctorWorkingHours
+from .models import Appointment, ClinicalService, Doctor, DoctorWorkingHours, Speciality
 
 
 class AppointmentEndpointTests(APITestCase):
 	def setUp(self):
+		self.speciality = Speciality.objects.create(
+			speciality_name='Neurology',
+			speciality_description='Brain and nervous system care',
+		)
+		self.service = ClinicalService.objects.create(
+			service_name='Neurology consultation',
+			speciality=self.speciality,
+		)
 		self.doctor = Doctor.objects.create(
 			full_name='Dr. Ada Lovelace',
 			email='ada@example.com',
 			phone_number='1234567890',
 		)
+		self.doctor.Specialities.add(self.speciality)
 		DoctorWorkingHours.objects.create(
 			doctor=self.doctor,
 			weekday=(timezone.localdate() + timedelta(days=2)).weekday(),
@@ -28,6 +37,7 @@ class AppointmentEndpointTests(APITestCase):
 			'phone_number': '0987654321',
 			'address': '1 Navy Street',
 			'doctor_name': self.doctor.full_name,
+			'clinical_service': self.service.pk,
 			'appointment_date': self.appointment_date,
 			'appointment_time': '09:00',
 		}
@@ -94,6 +104,7 @@ class AppointmentEndpointTests(APITestCase):
 			email='katherine@example.com',
 			phone_number='2223334444',
 		)
+		other_doctor.Specialities.add(self.speciality)
 		DoctorWorkingHours.objects.create(
 			doctor=other_doctor,
 			weekday=self.appointment_date.weekday(),
@@ -139,6 +150,20 @@ class AppointmentEndpointTests(APITestCase):
 		appointment.refresh_from_db()
 		self.assertEqual(appointment.doctor_id, self.doctor.pk)
 
+	def test_booking_rejects_doctor_without_service_speciality(self):
+		other_speciality = Speciality.objects.create(speciality_name='Cardiology')
+		other_service = ClinicalService.objects.create(
+			service_name='Heart consultation', speciality=other_speciality
+		)
+		data = {**self.booking_data, 'clinical_service': other_service.pk}
+
+		response = self.client.post(
+			reverse('appointment-list'), data, format='json'
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('doctor_name', response.data)
+
 	def test_doctor_can_be_created_with_working_schedule(self):
 		response = self.client.post(
 			reverse('doctor-list'),
@@ -146,6 +171,7 @@ class AppointmentEndpointTests(APITestCase):
 				'full_name': 'Dr. Marie Curie',
 				'email': 'marie@example.com',
 				'phone_number': '1112223333',
+				'specialities': [self.speciality.pk],
 				'working_hours': [
 					{'weekday': 1, 'start_time': '08:00', 'end_time': '12:00'}
 				],
@@ -161,6 +187,7 @@ class AppointmentEndpointTests(APITestCase):
 			'full_name': 'Dr. No Schedule',
 			'email': 'none@example.com',
 			'phone_number': '1112223333',
+			'specialities': [self.speciality.pk],
 			'working_hours': [],
 		}
 		response = self.client.post(reverse('doctor-list'), data, format='json')
