@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Patient, Doctor, Appointment
+from .models import Appointment, Doctor, DoctorWorkingHours, Patient
+from .services.availability import get_doctor_available_slots
 from .services.bookings import create_appointment, reschedule_appointment
 from .exceptions import BookingError
 
@@ -7,6 +8,29 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = ['full_name', 'email', 'phone_number', 'address']
+
+
+class DoctorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Doctor
+        fields = ['id', 'full_name', 'email', 'phone_number', 'is_active']
+
+
+class DoctorWorkingHoursSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+
+    class Meta:
+        model = DoctorWorkingHours
+        fields = [
+            'id', 'doctor', 'doctor_name', 'weekday', 'start_time', 'end_time'
+        ]
+
+    def validate(self, attrs):
+        if attrs['start_time'] >= attrs['end_time']:
+            raise serializers.ValidationError(
+                {'end_time': 'End time must be later than start time.'}
+            )
+        return attrs
 
 class BookAppointmentSerializer(serializers.Serializer):
     full_name=serializers.CharField(max_length=200)
@@ -24,6 +48,19 @@ class BookAppointmentSerializer(serializers.Serializer):
         if not doctor:
             raise serializers.ValidationError("Active doctor with this name does not exist")
         return doctor
+
+    def validate(self, attrs):
+        doctor = attrs['doctor_name']
+        available_slots = get_doctor_available_slots(
+            doctor, attrs['appointment_date']
+        )
+        if attrs['appointment_time'] not in available_slots:
+            raise serializers.ValidationError({
+                'appointment_time': (
+                    'This slot is not available for the selected doctor and date.'
+                )
+            })
+        return attrs
 
     def create(self, validated_data):
         doctor = validated_data.pop('doctor_name')

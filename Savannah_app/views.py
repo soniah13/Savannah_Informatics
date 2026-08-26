@@ -4,12 +4,14 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .exceptions import BookingError
-from .models import Appointment, Doctor, Patient
+from .models import Appointment, Doctor, DoctorWorkingHours, Patient
 from .serializers import (
     AppointmentListSerializer,
     AppointmentResponseSerializer,
     BookAppointmentSerializer,
     CancelAppointmentSerializer,
+    DoctorSerializer,
+    DoctorWorkingHoursSerializer,
     PatientSerializer,
     RescheduleAppointmentSerializer,
 )
@@ -53,7 +55,7 @@ class AppointmentViewSet(viewsets.ViewSet):
     def reschedule(self, request, pk=None):
         appointment = get_object_or_404(Appointment, pk=pk)
         serializer = RescheduleAppointmentSerializer(
-            appointment, data=request.data, partial=True
+            appointment, data=request.data
         )
         serializer.is_valid(raise_exception=True)
 
@@ -66,6 +68,14 @@ class AppointmentViewSet(viewsets.ViewSet):
 
 
 class DoctorViewSet(viewsets.ViewSet):
+    def list(self, request):
+        doctors = Doctor.objects.filter(is_active=True).order_by('full_name')
+        return Response(DoctorSerializer(doctors, many=True).data)
+
+    def retrieve(self, request, pk=None):
+        doctor = get_object_or_404(Doctor, pk=pk, is_active=True)
+        return Response(DoctorSerializer(doctor).data)
+
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
         doctor = get_object_or_404(Doctor, pk=pk, is_active=True)
@@ -98,3 +108,17 @@ class DoctorViewSet(viewsets.ViewSet):
 class PatientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Patient.objects.all().order_by('full_name')
     serializer_class = PatientSerializer
+
+
+class DoctorWorkingHoursViewSet(viewsets.ModelViewSet):
+    serializer_class = DoctorWorkingHoursSerializer
+    queryset = DoctorWorkingHours.objects.select_related('doctor').order_by(
+        'doctor__full_name', 'weekday', 'start_time'
+    )
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        doctor_id = self.request.query_params.get('doctor')
+        if doctor_id:
+            queryset = queryset.filter(doctor_id=doctor_id)
+        return queryset
