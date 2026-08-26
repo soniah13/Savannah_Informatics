@@ -98,14 +98,14 @@ Availability shown on the calendar is not considered sufficient on its own. When
   - *Decision:* Included a frontend template alongside the backend API.
   - *Trade-off:* Adds minor overhead to a strictly backend repository, but is invaluable for immediate visual endpoint testing and UX validation.
 
-## Future Considerations
+## **Future Considerations**
 
 If the system later expands to multiple clinical branches, a `ClinicalCenter` model can be introduced and connected to doctor schedules and appointments.
 
 
 ## **AI Reflection**
 
-### **1. What did you use AI for across the four sections?**
+### 1. What did you use AI for across the four sections?
 
 - **System Design:** Used AI for brainstorming and reviewing models, relationships, and design decisions. Initially, I designed automatic doctor assignment, but after reviewing the assessment requirements, I changed the system so patients select a doctor. AI helped me restructure the existing code to support this change.
 
@@ -117,7 +117,7 @@ If the system later expands to multiple clinical branches, a `ClinicalCenter` mo
 
 I treated AI as a development assistant and reviewed its suggestions against the requirements before implementing them.
 
-### **2. Give one example where an AI suggestion improved your work. What did you prompt it with?**
+### 2. Give one example where an AI suggestion improved your work. What did you prompt it with?
 
 AI suggested separating my appointment business logic from the Django views into a `services/` layer. This made the booking, availability, cancellation, rescheduling, and working-hours logic easier to maintain and test.
 
@@ -127,15 +127,15 @@ AI suggested separating my appointment business logic from the Django views into
 
 I adapted the suggestion to fit my existing project rather than copying the implementation directly.
 
-### **3. Give one example where AI output was wrong or incomplete and how you caught it.**
+### 3. Give one example where AI output was wrong or incomplete and how you caught it.
 
 AI suggested adding a `status` field to the `Appointment` model.
 
-I rejected this after comparing it with my requirements. In my system, an appointment is immediately considered **booked** once successfully created, so a separate `pending` or `confirmed` status was unnecessary and would add complexity.
+I rejected this after comparing it with my requirements. In my system, an appointment is immediately considered booked once successfully created, so a separate `pending` or `confirmed` status was unnecessary and would add complexity.
 
 This reinforced the importance of validating AI suggestions against the actual requirements.
 
-### **4. Name two decisions you made without AI. Why did you trust your own judgment?**
+### 4. Name two decisions you made without AI. Why did you trust your own judgment?
 
 **Decision 1: Patient selects the doctor**
 
@@ -143,10 +143,10 @@ I decided that the booking form should allow patients to view and select an avai
 
 **Decision 2: Doctor working hours determine available slots**
 
-I decided that doctors must specify both their working days and the actual time ranges they work. When a patient selects a doctor and date, the system automatically generates the available **30-minute slots** based on the doctor's working hours and existing appointments.
+I decided that doctors must specify both their working days and the actual time ranges they work. When a patient selects a doctor and date, the system automatically generates the available 30-minute slots based on the doctor's working hours and existing appointments.
 
 I trusted these decisions because I was considering both the assessment requirements and the actual user experience, rather than simply implementing the easiest technical solution.
 
-### **Overall Reflection**
+### Overall Reflection
 
-AI helped me work faster with debugging, testing, restructuring, and implementation. However, I remained responsible for the final architecture and decisions. I learned that AI suggestions are most useful when treated as **guidance to evaluate**, not as requirements to follow blindly.
+AI helped me work faster with debugging, testing, restructuring, and implementation. However, I remained responsible for the final architecture and decisions. I learned that AI suggestions are most useful when treated as guidance to evaluate, not as requirements to follow blindly.
