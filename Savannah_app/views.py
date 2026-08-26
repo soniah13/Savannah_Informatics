@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime
-from .models import Doctor
+from .models import Doctor, Appointment
 from .services.availability import DoctorWorkingHours, generate_slots, is_bookable_time, doctor_has_conflicts
 from django.shortcuts import get_object_or_404
 from .serializers import BookAppointmentSerializer, AppointmentResponseSerializer
@@ -16,6 +16,11 @@ class BookAppointmentView(APIView):
             response_data = AppointmentResponseSerializer(appoitnment).data
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get(self):
+        appointments = Appointment.objects.all().order_by("-appointment_date", "-appointment_time")
+        serializer = AppointmentResponseSerializer(appointments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 class DoctorAvailabilityView(APIView):
@@ -44,3 +49,4 @@ class DoctorAvailabilityView(APIView):
                 "date": query_date,
                 "available_slots": sorted(available_slots)
             }, status=status.HTTP_200_OK)
+

@@ -45,6 +45,21 @@ class BookAppointmentSerializer(serializers.Serializer):
         except BookingError as e:
             raise serializers.ValidationError(str(e))
 
+class AppointmentListSerializer(serializers.ModelSerializer):
+    # Fetch human-readable names from the related foreign keys
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Appointment
+        fields = ['patient_name', 'doctor_name', 'appointment_date', 'appointment_time', 'created_at'
+        ]
+
+
+
+
 # serializer that makes doctors name readable and gives appoinment booking response cleaner
 class AppointmentResponseSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source="doctor.full_name", read_only=True)
