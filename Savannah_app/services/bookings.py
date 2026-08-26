@@ -21,7 +21,7 @@ def get_or_create_patient(full_name, email, phone_number,address):
         patient.save(
             update_fields=["full_name","phone_number","address"]
         )
-        return patient
+    return patient
 
 @transaction.atomic
 def create_appointment(
@@ -91,12 +91,20 @@ def reschedule_appointment(appointment, new_date, new_time):
         raise InvalidBookingError("Appointment date cannot be in the past")
     if not is_bookable_time(new_date, new_time):
         raise InvalidBookingError("Appointment must be booked atleast one hour in advance")
-    if not Doctor_is_available_during_slot(appointment.doctor, new_time, new_date):
+    if not Doctor_is_available_during_slot(appointment.doctor, new_date, new_time):
         raise SlotUnavailableError("The soctor does not work during this time slot either choose another doctor or another slot")
+
+    if doctor_has_conflicts(
+        appointment.doctor,
+        new_date,
+        new_time,
+        exclude_apppointment_id=appointment.id,
+    ):
+        raise ConflictError("The selected appointment slot is already booked.")
 
     appointment.appointment_date = new_date
     appointment.appointment_time = new_time
     appointment.is_rescheduled = True
-    appointment.save(update_fields=['appointment_date', 'appointmment_time', 'is_rescheduled'])
+    appointment.save(update_fields=['appointment_date', 'appointment_time', 'is_rescheduled'])
 
-    raise appointment
+    return appointment

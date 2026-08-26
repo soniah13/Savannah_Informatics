@@ -19,15 +19,14 @@ class BookAppointmentSerializer(serializers.Serializer):
     appointment_time = serializers.TimeField()
     additional_information = serializers.CharField(required=False, allow_blank=True)
 
-    def validate_doctor_id(self, value):
-            # using both filter and first just incase doctors share a name
-        doctor =  Doctor.objects.filter(full_name__isexact=value, is_active=True).firt()
+    def validate_doctor_name(self, value):
+        doctor = Doctor.objects.filter(full_name__iexact=value, is_active=True).first()
         if not doctor:
             raise serializers.ValidationError("Active doctor with this name does not exist")
         return doctor
 
     def create(self, validated_data):
-        doctor = validated_data.pop('doctor_id')
+        doctor = validated_data.pop('doctor_name')
 
         try:
             appointment = create_appointment(
@@ -38,7 +37,7 @@ class BookAppointmentSerializer(serializers.Serializer):
                 address=validated_data.pop('address'),
                 appointment_date=validated_data.pop("appointment_date"),
                 appointment_time=validated_data.pop("appointment_time"), 
-                additional_information=validated_data.get("additional_information")
+                additional_information=validated_data.get("additional_information", "")
 
             )
             return appointment
@@ -46,15 +45,15 @@ class BookAppointmentSerializer(serializers.Serializer):
             raise serializers.ValidationError(str(e))
 
 class AppointmentListSerializer(serializers.ModelSerializer):
-    # Fetch human-readable names from the related foreign keys
     patient_name = serializers.CharField(source='patient.full_name', read_only=True)
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
     
-    status = serializers.SerializerMethodField()
-
     class Meta:
         model = Appointment
-        fields = ['patient_name', 'doctor_name', 'appointment_date', 'appointment_time', 'created_at'
+        fields = [
+            'patient_name', 'doctor_name', 'appointment_date',
+            'appointment_time', 'additional_information', 'cancelled_at',
+            'cancellation_reason', 'is_rescheduled', 'created_at',
         ]
 
 

@@ -17,8 +17,8 @@ def Doctor_is_available_during_slot(doctor:Doctor, appointment_date, appointment
 
     return DoctorWorkingHours.objects.filter(doctor=doctor,
                                              weekday=weekday,
-                                             start_time_lte = slot_start,
-                                             end_time_gte = slot_end,).exists()
+                                             start_time__lte=slot_start,
+                                             end_time__gte=slot_end).exists()
 
 
 # check if doctor has an active appointment in this slot.
