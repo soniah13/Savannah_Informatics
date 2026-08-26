@@ -182,6 +182,22 @@ class AppointmentEndpointTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 		self.assertEqual(response.data['working_hours'][0]['weekday'], 1)
 
+	def test_creating_speciality_creates_matching_clinical_service(self):
+		response = self.client.post(
+			reverse('speciality-list'),
+			{
+				'speciality_name': 'Dermatology',
+				'speciality_description': 'Skin care',
+			},
+				format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		service = ClinicalService.objects.get(
+			speciality__speciality_name='Dermatology'
+		)
+		self.assertEqual(service.service_name, 'Dermatology')
+
 	def test_doctor_schedule_requires_a_working_day(self):
 		data = {
 			'full_name': 'Dr. No Schedule',

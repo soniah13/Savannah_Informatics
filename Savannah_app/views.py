@@ -117,7 +117,7 @@ class PatientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PatientSerializer
 
 
-class SpecialityViewSet(viewsets.ReadOnlyModelViewSet):
+class SpecialityViewSet(viewsets.ModelViewSet):
     queryset = Speciality.objects.all().order_by('speciality_name')
     serializer_class = SpecialitySerializer
 

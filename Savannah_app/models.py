@@ -1,5 +1,6 @@
 from django.db import models
-from django.db.models import Q
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 # Create your models here.
@@ -87,6 +88,18 @@ class Appointment(models.Model):
                                       name='unique_active_doctor_appointment_slot'),
 
          ]
+
+
+@receiver(post_save, sender=Speciality)
+def create_default_clinical_service(sender, instance, created, **kwargs):
+    if created:
+        ClinicalService.objects.get_or_create(
+            speciality=instance,
+            defaults={
+                'service_name': instance.speciality_name,
+                'service_description': instance.speciality_description,
+            },
+        )
 
 
 

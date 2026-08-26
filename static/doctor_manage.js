@@ -13,6 +13,13 @@ function showResult(value, success = true) {
     target.classList.toggle('error', !success);
 }
 
+function showSpecialityResult(value, success = true) {
+    const target = $('#speciality-result');
+    target.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    target.classList.toggle('success', success);
+    target.classList.toggle('error', !success);
+}
+
 async function request(path, options = {}) {
     const response = await fetch(`${api}${path}`, {
         headers: {
@@ -83,6 +90,23 @@ function loadSpecialities(selected = []) {
         $('#doctor-specialities').innerHTML = specialities.map((speciality) => `<option value="${speciality.id}" ${selected.includes(speciality.id) ? 'selected' : ''}>${speciality.speciality_name}</option>`).join('');
     }).catch((error) => showResult(error.message, false));
 }
+
+$('#speciality-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    try {
+        const result = await request('/specialities/', {
+            method: 'POST',
+            body: JSON.stringify({
+                speciality_name: form.speciality_name.value,
+                speciality_description: form.speciality_description.value,
+            }),
+        });
+        showSpecialityResult(`${result.speciality_name} added. It is now available as a doctor speciality and booking service.`);
+        form.reset();
+        loadSpecialities();
+    } catch (error) { showSpecialityResult(error.message, false); }
+});
 
 function editDoctor(doctor) {
     const form = $('#doctor-form');

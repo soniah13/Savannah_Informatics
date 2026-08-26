@@ -132,6 +132,13 @@ class SpecialitySerializer(serializers.ModelSerializer):
         model = Speciality
         fields = ['id', 'speciality_name', 'speciality_description']
 
+    def validate_speciality_name(self, value):
+        if Speciality.objects.filter(speciality_name__iexact=value).exclude(
+            pk=self.instance.pk if self.instance else None
+        ).exists():
+            raise serializers.ValidationError('This speciality already exists.')
+        return value
+
 
 class ClinicalServiceSerializer(serializers.ModelSerializer):
     speciality_name = serializers.CharField(

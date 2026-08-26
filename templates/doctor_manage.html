@@ -51,6 +51,17 @@
             <div class="result" id="doctor-result" aria-live="polite">Choose a doctor below to edit an existing schedule.</div>
         </section>
 
+            <section class="panel accent-yellow">
+                <div class="panel-heading"><div><p class="eyebrow">02 / SPECIALITY DIRECTORY</p><h3>Add a speciality</h3></div><span class="method post">POST</span></div>
+                <form id="speciality-form" class="form-grid">
+                    {% csrf_token %}
+                    <label>Speciality name<input name="speciality_name" placeholder="Neurology" required></label>
+                    <label class="wide">Description<textarea name="speciality_description" rows="2" placeholder="Area of clinical expertise"></textarea></label>
+                    <button class="wide" type="submit">Add speciality</button>
+                </form>
+                <div class="result" id="speciality-result" aria-live="polite">New specialities become available as doctor specialities and booking services.</div>
+            </section>
+
         <section class="activity-section">
             <div class="section-heading"><div><p class="eyebrow">02 / EXISTING DOCTORS</p><h3>Edit a schedule</h3></div><button type="button" class="link-button" id="refresh-doctors">Refresh list <span>-></span></button></div>
             <div class="table-wrap"><table><thead><tr><th>Doctor</th><th>Email</th><th>Working days</th><th>Action</th></tr></thead><tbody id="doctors-body"><tr><td colspan="4" class="empty">Loading doctors...</td></tr></tbody></table></div>
