@@ -35,11 +35,29 @@ function buildSchedule(schedule = []) {
         const item = byDay[weekday] || {};
         return `<div class="schedule-row">
             <label class="check-label"><input type="checkbox" data-weekday="${weekday}" ${item.start_time ? 'checked' : ''}> ${day}</label>
-            <input type="time" data-start="${weekday}" value="${(item.start_time || '').slice(0, 5)}" aria-label="${day} start time">
+            <input type="time" data-start="${weekday}" value="${(item.start_time || '').slice(0, 5)}" ${item.start_time ? '' : 'disabled'} aria-label="${day} start time">
             <span>to</span>
-            <input type="time" data-end="${weekday}" value="${(item.end_time || '').slice(0, 5)}" aria-label="${day} end time">
+            <input type="time" data-end="${weekday}" value="${(item.end_time || '').slice(0, 5)}" ${item.end_time ? '' : 'disabled'} aria-label="${day} end time">
         </div>`;
     }).join('');
+}
+
+function validateScheduleRows() {
+    for (const checkbox of document.querySelectorAll('[data-weekday]')) {
+        if (!checkbox.checked) continue;
+        const weekday = checkbox.dataset.weekday;
+        const start = document.querySelector(`[data-start="${weekday}"]`);
+        const end = document.querySelector(`[data-end="${weekday}"]`);
+        if (!start.value || !end.value) {
+            showResult(`Select both start and end times for ${weekdays[weekday]}.`, false);
+            return false;
+        }
+    }
+    if (!document.querySelector('[data-weekday]:checked')) {
+        showResult('Select at least one working day and add its hours.', false);
+        return false;
+    }
+    return true;
 }
 
 function readSchedule() {
@@ -92,6 +110,7 @@ async function loadDoctors() {
 $('#doctor-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
+    if (!validateScheduleRows()) return;
     const data = {
         full_name: form.full_name.value,
         email: form.email.value,
@@ -108,6 +127,13 @@ $('#doctor-form').addEventListener('submit', async (event) => {
         await loadDoctors();
         resetForm();
     } catch (error) { showResult(error.message, false); }
+});
+
+document.addEventListener('change', (event) => {
+    if (!event.target.matches('[data-weekday]')) return;
+    const weekday = event.target.dataset.weekday;
+    document.querySelector(`[data-start="${weekday}"]`).disabled = !event.target.checked;
+    document.querySelector(`[data-end="${weekday}"]`).disabled = !event.target.checked;
 });
 
 $('#clear-form').addEventListener('click', resetForm);

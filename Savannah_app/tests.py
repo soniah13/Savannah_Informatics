@@ -86,3 +86,42 @@ class AppointmentEndpointTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		appointment.refresh_from_db()
 		self.assertEqual(str(appointment.appointment_time), '10:00:00')
+
+	def test_doctor_can_be_created_with_working_schedule(self):
+		response = self.client.post(
+			reverse('doctor-list'),
+			{
+				'full_name': 'Dr. Marie Curie',
+				'email': 'marie@example.com',
+				'phone_number': '1112223333',
+				'working_hours': [
+					{'weekday': 1, 'start_time': '08:00', 'end_time': '12:00'}
+				],
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(response.data['working_hours'][0]['weekday'], 1)
+
+	def test_doctor_schedule_requires_a_working_day(self):
+		data = {
+			'full_name': 'Dr. No Schedule',
+			'email': 'none@example.com',
+			'phone_number': '1112223333',
+			'working_hours': [],
+		}
+		response = self.client.post(reverse('doctor-list'), data, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('working_hours', response.data)
+
+	def test_working_hours_requires_both_times(self):
+		response = self.client.post(
+			reverse('working-hours-list'),
+			{'doctor': self.doctor.pk, 'weekday': 1, 'start_time': '09:00'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('end_time', response.data)

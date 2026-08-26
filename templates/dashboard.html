@@ -36,7 +36,7 @@
                 <div class="panel-heading"><div><p class="eyebrow">01 / SCHEDULE</p><h3>Check availability</h3></div><span class="method get">GET</span></div>
                 <form id="availability-form">
                     {% csrf_token %}
-                    <label>Doctor ID<input name="doctor_id" type="number" min="1" placeholder="e.g. 1" required></label>
+                    <label>Doctor<select name="doctor_id" id="availability-doctor" required><option value="">Choose a doctor</option></select></label>
                     <label>Date<input name="date" type="date" required></label>
                     <button type="submit">Find open slots <span>-></span></button>
                 </form>
@@ -50,9 +50,10 @@
                     <label>Patient name<input name="full_name" placeholder="Grace Hopper" required></label>
                     <label>Email<input name="email" type="email" placeholder="grace@example.com" required></label>
                     <label>Phone<input name="phone_number" placeholder="0987654321" required></label>
-                    <label>Doctor name<input name="doctor_name" placeholder="Dr. Ada Lovelace" required></label>
-                    <label>Date<input name="appointment_date" type="date" required></label>
-                    <label>Time<input name="appointment_time" type="time" required></label>
+                    <label>Doctor<select name="doctor_name" id="booking-doctor" required><option value="">Choose a doctor</option></select></label>
+                    <label>Date<input name="appointment_date" id="booking-date" type="date" required></label>
+                    <label>Available time<select name="appointment_time" id="booking-time" required disabled><option value="">Choose doctor and date first</option></select></label>
+                    <div class="result wide" id="booking-slots" aria-live="polite">Select a doctor and date to see available times.</div>
                     <label class="wide">Address<textarea name="address" rows="2" placeholder="Patient address" required></textarea></label>
                     <label class="wide">Additional information<textarea name="additional_information" rows="2" placeholder="Optional notes"></textarea></label>
                     <button class="wide" type="submit">Create booking <span>-></span></button>

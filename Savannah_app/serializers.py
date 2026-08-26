@@ -31,6 +31,11 @@ class DoctorSerializer(serializers.ModelSerializer):
         if schedule is None:
             return attrs
 
+        if not isinstance(schedule, list) or not schedule:
+            raise serializers.ValidationError({
+                'working_hours': 'Add at least one working day and its hours.'
+            })
+
         schedule_serializer = DoctorScheduleItemSerializer(data=schedule, many=True)
         schedule_serializer.is_valid(raise_exception=True)
         attrs['working_hours'] = schedule_serializer.validated_data
@@ -63,6 +68,10 @@ class DoctorScheduleItemSerializer(serializers.Serializer):
     end_time = serializers.TimeField()
 
     def validate(self, attrs):
+        if 'start_time' not in attrs or 'end_time' not in attrs:
+            raise serializers.ValidationError(
+                'A working day must include both start and end times.'
+            )
         if attrs['start_time'] >= attrs['end_time']:
             raise serializers.ValidationError(
                 {'end_time': 'End time must be later than start time.'}
@@ -80,6 +89,10 @@ class DoctorWorkingHoursSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
+        if 'start_time' not in attrs or 'end_time' not in attrs:
+            raise serializers.ValidationError(
+                'A working day must include both start and end times.'
+            )
         if attrs['start_time'] >= attrs['end_time']:
             raise serializers.ValidationError(
                 {'end_time': 'End time must be later than start time.'}

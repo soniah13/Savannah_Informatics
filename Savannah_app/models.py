@@ -54,6 +54,14 @@ class DoctorWorkingHours(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(start_time__lt=models.F('end_time')),
+                name='working_hours_start_before_end',
+            ),
+        ]
+
 class Appointment(models.Model):
     patient= models.ForeignKey(Patient, on_delete=models.PROTECT,related_name='appointments')
     doctor = models.ForeignKey(Doctor, on_delete=models.PROTECT, related_name='appointments')
