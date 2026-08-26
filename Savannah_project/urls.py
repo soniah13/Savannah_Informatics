@@ -21,6 +21,7 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='dashboard.html'), name='dashboard'),
+    path('doctors/manage/', TemplateView.as_view(template_name='doctor_manage.html'), name='doctor-manage'),
     path('admin/', admin.site.urls),
     path('api/v1/',include('Savannah_app.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

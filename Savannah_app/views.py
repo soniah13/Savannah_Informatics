@@ -67,14 +67,12 @@ class AppointmentViewSet(viewsets.ViewSet):
         return Response(AppointmentResponseSerializer(appointment).data)
 
 
-class DoctorViewSet(viewsets.ViewSet):
-    def list(self, request):
-        doctors = Doctor.objects.filter(is_active=True).order_by('full_name')
-        return Response(DoctorSerializer(doctors, many=True).data)
+class DoctorViewSet(viewsets.ModelViewSet):
+    serializer_class = DoctorSerializer
+    queryset = Doctor.objects.all().order_by('full_name')
 
-    def retrieve(self, request, pk=None):
-        doctor = get_object_or_404(Doctor, pk=pk, is_active=True)
-        return Response(DoctorSerializer(doctor).data)
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):

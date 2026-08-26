@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from .models import Appointment, Doctor, DoctorWorkingHours, Patient
 from .services.availability import get_doctor_available_slots
@@ -11,9 +12,62 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 class DoctorSerializer(serializers.ModelSerializer):
+    working_hours = serializers.SerializerMethodField()
+
     class Meta:
         model = Doctor
-        fields = ['id', 'full_name', 'email', 'phone_number', 'is_active']
+        fields = [
+            'id', 'full_name', 'email', 'phone_number', 'is_active',
+            'working_hours',
+        ]
+
+    def get_working_hours(self, doctor):
+        return DoctorWorkingHoursSerializer(
+            doctor.working_hours.order_by('weekday', 'start_time'), many=True
+        ).data
+
+    def validate(self, attrs):
+        schedule = self.initial_data.get('working_hours')
+        if schedule is None:
+            return attrs
+
+        schedule_serializer = DoctorScheduleItemSerializer(data=schedule, many=True)
+        schedule_serializer.is_valid(raise_exception=True)
+        attrs['working_hours'] = schedule_serializer.validated_data
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        schedule = validated_data.pop('working_hours', [])
+        doctor = Doctor.objects.create(**validated_data)
+        DoctorWorkingHours.objects.bulk_create(
+            [DoctorWorkingHours(doctor=doctor, **item) for item in schedule]
+        )
+        return doctor
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        schedule = validated_data.pop('working_hours', None)
+        doctor = super().update(instance, validated_data)
+        if schedule is not None:
+            doctor.working_hours.all().delete()
+            DoctorWorkingHours.objects.bulk_create(
+                [DoctorWorkingHours(doctor=doctor, **item) for item in schedule]
+            )
+        return doctor
+
+
+class DoctorScheduleItemSerializer(serializers.Serializer):
+    weekday = serializers.IntegerField(min_value=0, max_value=6)
+    start_time = serializers.TimeField()
+    end_time = serializers.TimeField()
+
+    def validate(self, attrs):
+        if attrs['start_time'] >= attrs['end_time']:
+            raise serializers.ValidationError(
+                {'end_time': 'End time must be later than start time.'}
+            )
+        return attrs
 
 
 class DoctorWorkingHoursSerializer(serializers.ModelSerializer):

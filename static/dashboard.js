@@ -1,6 +1,10 @@
 const api = '/api/v1';
 const $ = (selector) => document.querySelector(selector);
 
+function csrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
 function formData(form) {
     return Object.fromEntries(new FormData(form).entries());
 }
@@ -14,7 +18,11 @@ function showResult(selector, value, success = true) {
 
 async function request(path, options = {}) {
     const response = await fetch(`${api}${path}`, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken(),
+            ...(options.headers || {}),
+        },
         ...options,
     });
     const text = await response.text();

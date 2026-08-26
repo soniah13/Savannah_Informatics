@@ -1,0 +1,60 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Savannah Informatics | Doctors and schedules</title>
+    <link rel="stylesheet" href="{% static 'dashboard.css' %}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">SAVANNAH INFORMATICS</p>
+            <h1>Doctors & schedules</h1>
+        </div>
+        <nav aria-label="Navigation">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'swagger-ui' %}" target="_blank" rel="noreferrer">Swagger</a>
+            <a href="{% url 'admin:index' %}" target="_blank" rel="noreferrer">Admin</a>
+        </nav>
+    </header>
+
+    <main class="shell">
+        <section class="intro">
+            <div>
+                <p class="eyebrow">DOCTOR DIRECTORY / SCHEDULE EDITOR</p>
+                <h2>Add a doctor and set their weekly working hours.</h2>
+                <p class="muted">Leave a day unchecked when the doctor does not work. Existing doctors can be selected below and their schedule replaced in one save.</p>
+            </div>
+        </section>
+
+        <section class="panel accent-teal">
+            <div class="panel-heading"><div><p class="eyebrow">01 / DOCTOR DETAILS</p><h3 id="form-title">Add doctor</h3></div><span class="method post">POST</span></div>
+            <form id="doctor-form" class="form-grid">
+                {% csrf_token %}
+                <input name="doctor_id" type="hidden">
+                <label>Full name<input name="full_name" placeholder="Dr. Ada Lovelace" required></label>
+                <label>Email<input name="email" type="email" placeholder="ada@example.com" required></label>
+                <label>Phone<input name="phone_number" placeholder="1234567890" required></label>
+                <label class="check-label"><input name="is_active" type="checkbox" checked> Active doctor</label>
+                <fieldset class="wide schedule-fieldset">
+                    <legend>Weekly working hours</legend>
+                    <div id="schedule-rows"></div>
+                </fieldset>
+                <div class="button-row wide">
+                    <button type="submit" id="save-doctor">Add doctor</button>
+                    <button type="button" class="secondary" id="clear-form">Clear</button>
+                </div>
+            </form>
+            <div class="result" id="doctor-result" aria-live="polite">Choose a doctor below to edit an existing schedule.</div>
+        </section>
+
+        <section class="activity-section">
+            <div class="section-heading"><div><p class="eyebrow">02 / EXISTING DOCTORS</p><h3>Edit a schedule</h3></div><button type="button" class="link-button" id="refresh-doctors">Refresh list <span>-></span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Doctor</th><th>Email</th><th>Working days</th><th>Action</th></tr></thead><tbody id="doctors-body"><tr><td colspan="4" class="empty">Loading doctors...</td></tr></tbody></table></div>
+        </section>
+    </main>
+    <script src="{% static 'doctor_manage.js' %}"></script>
+</body>
+</html>
