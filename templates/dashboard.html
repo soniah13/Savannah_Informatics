@@ -1,0 +1,91 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Savannah Informatics | Operations dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard.css' %}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">SAVANNAH INFORMATICS</p>
+            <h1>Clinical operations</h1>
+        </div>
+        <nav aria-label="Developer tools">
+            <a href="{% url 'swagger-ui' %}" target="_blank" rel="noreferrer">Swagger</a>
+            <a href="{% url 'redoc' %}" target="_blank" rel="noreferrer">ReDoc</a>
+            <a href="{% url 'admin:index' %}" target="_blank" rel="noreferrer">Admin</a>
+        </nav>
+    </header>
+
+    <main class="shell">
+        <section class="intro">
+            <div>
+                <p class="eyebrow">WORKSPACE / API CONSOLE</p>
+                <h2>Test the booking journey in one place.</h2>
+                <p class="muted">Use the forms below against your live database. Doctors and working hours are managed in Admin; bookings are handled through the API.</p>
+            </div>
+            <div class="status" id="connection-status"><span></span>Ready</div>
+        </section>
+
+        <section class="grid two-up">
+            <article class="panel accent-teal">
+                <div class="panel-heading"><div><p class="eyebrow">01 / SCHEDULE</p><h3>Check availability</h3></div><span class="method get">GET</span></div>
+                <form id="availability-form">
+                    <label>Doctor ID<input name="doctor_id" type="number" min="1" placeholder="e.g. 1" required></label>
+                    <label>Date<input name="date" type="date" required></label>
+                    <button type="submit">Find open slots <span>-></span></button>
+                </form>
+                <div class="result" id="availability-result" aria-live="polite">No request yet.</div>
+            </article>
+
+            <article class="panel accent-coral">
+                <div class="panel-heading"><div><p class="eyebrow">02 / INTAKE</p><h3>Book an appointment</h3></div><span class="method post">POST</span></div>
+                <form id="booking-form" class="form-grid">
+                    <label>Patient name<input name="full_name" placeholder="Grace Hopper" required></label>
+                    <label>Email<input name="email" type="email" placeholder="grace@example.com" required></label>
+                    <label>Phone<input name="phone_number" placeholder="0987654321" required></label>
+                    <label>Doctor name<input name="doctor_name" placeholder="Dr. Ada Lovelace" required></label>
+                    <label>Date<input name="appointment_date" type="date" required></label>
+                    <label>Time<input name="appointment_time" type="time" required></label>
+                    <label class="wide">Address<textarea name="address" rows="2" placeholder="Patient address" required></textarea></label>
+                    <label class="wide">Additional information<textarea name="additional_information" rows="2" placeholder="Optional notes"></textarea></label>
+                    <button class="wide" type="submit">Create booking <span>-></span></button>
+                </form>
+                <div class="result" id="booking-result" aria-live="polite">No request yet.</div>
+            </article>
+        </section>
+
+        <section class="grid two-up">
+            <article class="panel accent-ink">
+                <div class="panel-heading"><div><p class="eyebrow">03 / FOLLOW-UP</p><h3>Manage appointment</h3></div><span class="method patch">PATCH</span></div>
+                <form id="manage-form" class="form-grid">
+                    <label>Appointment ID<input name="appointment_id" type="number" min="1" placeholder="e.g. 1" required></label>
+                    <div></div>
+                    <label>New date<input name="reschedule_date" type="date"></label>
+                    <label>New time<input name="reschedule_time" type="time"></label>
+                    <label class="wide">Cancellation reason<textarea name="reason" rows="2" placeholder="Required to cancel"></textarea></label>
+                    <div class="button-row wide"><button type="button" class="secondary" id="reschedule-button">Reschedule</button><button type="button" class="danger" id="cancel-button">Cancel appointment</button></div>
+                </form>
+                <div class="result" id="manage-result" aria-live="polite">Choose an action.</div>
+            </article>
+
+            <article class="panel accent-yellow">
+                <div class="panel-heading"><div><p class="eyebrow">04 / DIRECTORY</p><h3>Patients</h3></div><span class="method get">GET</span></div>
+                <p class="muted">Read-only patient records created through successful bookings.</p>
+                <button type="button" class="secondary" id="refresh-patients">Refresh patients</button>
+                <div class="result table-result" id="patients-result" aria-live="polite">No request yet.</div>
+            </article>
+        </section>
+
+        <section class="activity-section">
+            <div class="section-heading"><div><p class="eyebrow">LIVE DATA</p><h3>Recent appointments</h3></div><button type="button" class="link-button" id="refresh-appointments">Refresh list <span>-></span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th><th>Notes</th></tr></thead><tbody id="appointments-body"><tr><td colspan="6" class="empty">Loading appointments...</td></tr></tbody></table></div>
+        </section>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="{% static 'dashboard.js' %}"></script>
+</body>
+</html>
