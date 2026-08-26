@@ -45,11 +45,11 @@ async function loadAppointments() {
         const appointments = await request('/appointments/');
         body.innerHTML = appointments.length ? appointments.map((appointment) => {
             const cancelled = Boolean(appointment.cancelled_at);
-            return `<tr><td>${appointment.patient_name}</td><td>${appointment.doctor_name}</td><td>${appointment.appointment_date}</td><td>${appointment.appointment_time.slice(0, 5)}</td><td><span class="badge ${cancelled ? 'cancelled' : ''}">${cancelled ? 'Cancelled' : 'Booked'}</span></td><td>${appointment.additional_information || '-'}</td></tr>`;
-        }).join('') : '<tr><td colspan="6" class="empty">No appointments found.</td></tr>';
+            return `<tr><td>${appointment.patient_name}</td><td>${appointment.service_name || '-'}</td><td>${appointment.doctor_name}</td><td>${appointment.appointment_date}</td><td>${appointment.appointment_time.slice(0, 5)}</td><td><span class="badge ${cancelled ? 'cancelled' : ''}">${cancelled ? 'Cancelled' : 'Booked'}</span></td><td>${appointment.additional_information || '-'}</td></tr>`;
+        }).join('') : '<tr><td colspan="7" class="empty">No appointments found.</td></tr>';
         $('#connection-status').innerHTML = '<span></span>Connected';
     } catch (error) {
-        body.innerHTML = `<tr><td colspan="6" class="empty">${error.message}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="empty">${error.message}</td></tr>`;
         $('#connection-status').innerHTML = '<span></span>API unavailable';
     }
 }
