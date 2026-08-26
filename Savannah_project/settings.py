@@ -30,7 +30,13 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG")
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",") if os.environ.get("ALLOWED_HOSTS") else []
+allowed_hosts = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if render_hostname:
+    allowed_hosts.append(render_hostname)
+
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts if host.strip()]
 
 
 # Application definition
