@@ -1,304 +1,103 @@
-# Clinical Booking System 
+# Clinical Booking System
 
 ## Deployment & Pipeline
 
-
-- **Deployment branch:** `main`
-- **CI/CD pipeline:** Every push to `main` triggers the pipeline. It sets up Python 3.14, installs dependencies from `requirements.txt`, runs database migrations, and executes the automated test suite. After the checks pass, the latest code is deployed to the production environment.
+- **Deployment Branch:** The `main` branch triggers the deployment automatically upon a successful merge or push.
+- **CI/CD Pipeline:** The pipeline automatically runs on every push to `main`. It sets up the Python environment (Python 3.14), installs dependencies via `requirements.txt`, runs database migrations, and executes the automated test suite to ensure no breaking changes are introduced. Once tests pass, the pipeline deploys the latest code to the production environment.
 
 ## Overview
-This project is a backend clinical system designed to allow patients to book appointments by selecting a doctor, clinical service, date and 30min time slot.  
 
-The patient selects the doctor they want to see, and depending on the selected doctor and appointment date, the system dynamically generates the available 30-minute time slots based on the doctor's working hours and existing appointments.  
+This project is a backend clinical system designed to allow patients to book appointments seamlessly. To provide the best user experience, the system empowers the patient to choose their preferred doctor and appointment date.
 
-The core principle is  
-**The patient chooses the doctor, service, date and available time, while the system validates the appointment against the doctor's schedule and existing appointments.** 
+The core principle is: **The patient chooses the doctor and the date; the system dynamically generates the available time slots based on that specific doctor's working hours and existing appointments.**
 
 ## System Design
-The system separates data from scheduling logic. 
+
+The system separates data from scheduling logic and includes a testing frontend template to ensure a smooth user experience.
 
 ### Django Models
-1. Patient
-2. Doctor
-3. Speciality
-4. Clinical Service
-5. Doctor Working Hours(Shift)
-6. Appointment
 
-### Services
-1. Doctor Availability
-
-`models.py` manages data and relationships, while the services handles availability and doctor assignment.
-
-## Models
-### 1. Patient
-Stores Patient Information. Keeping in mind that A patient can have multiple appointment. 
-
-Patients Information is stored once and referenced by appointment rather than duplicated in each appointment. 
-```text
- full_name
- email
- phone_number
- address
-```
-
-### 2. Doctor
-Stores doctors who can be selected by patients when booking an appointment. A doctor can have multiple specialities.  
- 
-Working hours are stored separately because schedules can differ by day.  
-```text
- full_name
- email
- phone_number
- specialties
- is_active
-```
-
-### 3. Speciality
-Represents a doctor's area of expertise and are shared by doctors and clinical services. 
-
-```text
-Specialty
-   ├── Doctors
-   └── Clinical Services
-```
-### 4. Clinical Service
-Represents the service the patient wants to book. Each service maps to a required speciality.
-
-This relationship is used to identify eligible doctors automatically. 
-
-```text
- name
- specialty
- description
-```
-
-### 5. Doctor Working Hours
-Defines when a doctor is available to work. Considering doctors work in shifts.  
- 
-Working hours are stored separately from `Doctor` so different schedules can be represented without complicating the doctor model.  
-
-When creating a doctor, the available working days and the working hours for each day can be provided. A validation constraint ensures that no selected working day exists without corresponding working hours. 
-```text
- doctor
- weekday
- start_time
- end_time
-```
-### 6. Appointment
-Represents a successfully booked appointment. Considering every appointment is exactly *30 min*.  
- 
-The appointment is linked to the selected doctor, clinical service, date and time.  
+1. **Patient:** Stores patient information (Full name, email, phone number, address).
+2. **Doctor:** Stores doctors who can be assigned to appointments.
+3. **Speciality:** Represents a doctor's area of expertise.
+4. **Clinical Service:** Represents the service the patient wants to book.
+5. **Doctor Working Hours (Shift):** Defines when a doctor is available to work. Includes constraints to ensure no working day is created without corresponding working hours.
+6. **Appointment:** Represents a successfully booked 30-minute appointment.
 
 ## Availability
-Availability is calculated dynamically rather than stores as a separate field. 
+
+Availability is calculated dynamically based on the specific doctor selected by the patient.
 
 The calendar requests available slots using:
-```text
-Doctor
-+
-Date
-```
-The availability sevice then:
-```text
-1. Find the selected doctor's working hours for the requested day. 
-2. Check existing appointments for the selected doctor. 
-3. Generate 30-minute slots based on the doctor's working hours. 
-4. Remove slots that are already booked. 
-5. Remove slots less than one hour from the current time. 
-6. Return the remaining slots. 
-```
-A slot is displayed only when the selected doctor is available at that time. 
 
-### Dynamic Availability
-The system does not need to reload or restart when a booking is made. Availability is derived from the current database state by checking:
-```text
-Doctor Working Hours
-        +
-Existing Appointments
-        =
-Current Available Slots
-```
-After an appointment is created, the next availability request automatically reflects the updated schedule. 
+`Doctor` + `Date`
 
-### One-Hour Booking Rule
-Patients cannot book an appointment less than one hour in advance.  
+The availability service then:
 
-The rule is applied when generating available slots and checked again when creating an appointment so it cannot be bypassed through a direct API request. 
+1. Checks the specific doctor's working days and hours for the chosen date.
+2. Checks the doctor's existing appointments.
+3. Generates 30-minute slots.
+4. Removes slots that are already booked.
+5. Removes slots less than one hour from the current time.
+6. Returns the remaining available slots for the patient to choose from.
 
-## Prevent Double booking 
-Availability shown on the calendar is not considered sufficient on its own.  
- 
-When the patient submits a booking, the backend checks availability again inside a database transaction.  
- 
-This is to prevent a scenario where the same doctor and time slot are selected by two patients at the same time. So the database:  
-```text 
-Start transaction 
-      ↓ 
-Re-check slot 
-      ↓ 
-Verify doctor availability 
-      ↓ 
-Create appointment 
-      ↓ 
-Commit 
-``` 
+## Doctor Assignment 
+Unlike automated assignment, the patient explicitly selects their doctor.
 
-The appointment model also uses a database-level constraint preventing the same doctor from being assigned to the same date and time more than once.  
- 
-## Booking Flow 
-```text 
-Patient enters details 
-        ↓ 
-Selects doctor 
-        ↓ 
-Selects clinical service 
-        ↓ 
-Selects date 
-        ↓ 
-Calendar requests available slots for selected doctor and date 
-        ↓ 
-Availability service calculates slots 
-        ↓ 
-Patient selects a slot 
-        ↓ 
-Booking request submitted 
-        ↓ 
-Backend re-checks availability 
-        ↓ 
-Appointment created 
-``` 
- 
-The booking form contains: 
-```text 
-Full name 
-Email 
-Phone number 
-Address 
-Doctor 
-Appointment date 
-Appointment time 
-Clinical service 
-Additional information 
-``` 
- 
-## API Endpoints 
+1. The booking form presents a list of available doctors.
+2. The patient selects a doctor and a date.
+3. The system generates available times depending on that exact doctor's schedule.
 
-The system provides endpoints for managing doctors, working schedules, availability and appointments.  
+## Prevent Double Booking
 
-These include:  
-```text 
-Base URL: /api/v1/
+Availability shown on the calendar is not considered sufficient on its own. When the patient submits a booking, the backend checks availability again inside a database transaction:
 
-POST /doctors/
-- Create a doctor with available working days and working hours
+`Start transaction` → `Re-check slot` → `Create appointment` → `Commit`
 
-GET /appointments/
-- Retrieve all appointments
+## Booking Flow
 
-GET /doctors/{id}/availability/?date=YYYY-MM-DD
-- Retrieve available 30-minute times for a selected doctor and date
+1.`Patient enters details` 
 
-The API also exposes patient and working-hours resources through the same
-versioned base URL.
-``` 
+2.`Selects preferred Doctor` 
 
-When creating a doctor, the request includes the doctor's available working days and the working hours for each selected day. The system validates the schedule to ensure that no working day is configured without working hours.  
+3.`Selects Date`
 
-## Testing Frontend 
+4.`System fetches available slots for that Doctor on that Date`
 
-A testing frontend template was added to test the API endpoints through a user-facing booking flow.  
+5.`Patient selects a 30-min time slot`
 
-The frontend makes it possible to test the endpoints in a more practical way and evaluate the complete user experience instead of testing each endpoint independently.  
+6.`Booking request submitted & Backend re-checks availability`
 
-The testing flow allows the user to:  
-```text 
-Select doctor 
-        ↓ 
-Select date 
-        ↓ 
-View dynamically generated available times 
-        ↓ 
-Select appointment time 
-        ↓ 
-Create appointment 
-        ↓ 
-View appointments 
-``` 
+7.`Appointment created`
 
-The frontend testing experience also informed the design decisions by making it easier to identify a smoother and more intuitive booking flow.  
+## Components & Endpoints
 
-## Components 
-```text 
-appointments/ 
-│ 
-├── models.py 
-├── serializers.py 
-├── views.py 
-├── urls.py 
-│ 
-└── services/ 
-    └── availability.py 
-``` 
- 
-### `models.py` 
-Defines database models, relationship and constraints.  
- 
-### `serializers.py` 
-Validates incoming booking data and serializes API responses. 
- 
-### `views.py` 
-Handles API requests and delegates availability and booking logic to the service layer. 
- 
-### `availability.py` 
-Calculates available 30-minute appointment slots based on the selected doctor, working hours and existing appointments. 
- 
- 
-## Key Design Decisions and Trade-Offs 
- 
-### Separate Working hours from Doctor 
-`DoctorWorkingHour` is a separate model that makes different schedules easy to represent and keeps the doctor model simple.  
+- **`models.py`:** Defines database models, relationships, and constraints.
+- **`serializers.py`:** Validates incoming booking data and serializes API responses.
+- **`views.py`:** Handles API requests. Key endpoints include:
+  - `GET /appointments/`: Retrieves all appointments in the system.
+  - `POST /doctors/`: Creates a doctor. Requires selecting available working days and specifying working hours for each day.
+- **`availability.py`:** Calculates available 30-minute appointment slots for the selected doctor.
+- **Frontend Testing Template:** A lightweight UI added to smoothly test endpoints, validate the booking flow, and ensure an optimal user experience.
 
-Working days and their corresponding working hours are configured when creating a doctor, with validation to ensure that every working day has working hours.  
- 
-### Dynamic availability instead of stored slots.  
-Calculating available slots from working hours and existing appointments helps avoid maintaining a separate slot table and keeps availability consistent with the current database state.  
- 
-### Doctor selected by the patient.  
-Patients select the doctor they want to see, together with the clinical service and appointment date. The available appointment times are then generated based on that doctor's working hours and existing appointments.  
+## Key Design Decisions and Trade-Offs
 
-This provides a more direct and transparent booking experience while the backend still validates that the selected doctor is available for the requested time.  
- 
-### Testing through a frontend 
-A frontend testing template was added to test the endpoints through an actual booking flow.  
+- **Patient-Selected Doctor:**
+  - *Decision:* Changed from automated backend assignment to allowing the patient to select the doctor's name directly on the form.
+  - *Trade-off:* While this might lead to uneven distribution of appointments among doctors (favoring popular doctors), it significantly improves patient autonomy, satisfaction, and the overall user experience.
 
-This made it easier to test the interaction between the endpoints, verify the availability flow and make design decisions based on a smoother user experience rather than testing the endpoints only in isolation.  
- 
-## Future consideration: Multiple clinical centers 
-The current MVP intentionally does not include a `clinicalCenter` model.  
- 
-The assessment starts with a small five-doctor setup, so adding location-based scheduling would introduce complexity that is not required for the current scenario.  
- 
-If the system later expands to multiple clinical branches, `clinicalCenter` can be introduced and connected to doctor schedule and appointments. 
- 
-This keeps the current implementation focused while leaving room for future expansion.  
- 
-## Summary 
- 
-The system is built around a simple scheduling principle: 
- 
-**Patients choose the doctor and service they need, select a date, and the system generates the available appointment times based on the doctor's working schedule and existing appointments.** 
- 
-The system uses: 
- 
-```text 
-Django Models 
-      ↓ 
-Doctor Working Hours 
-      ↓ 
-Availability Service 
-      ↓ 
-Appointment 
-``` 
- 
-This design keeps the MVP simple while supporting dynamic availability, patient-selected doctors, configurable doctor working schedules, appointment management, protection against double booking, and a testing frontend for validating the API and user experience.
+- **Dynamic Availability by Doctor & Date:**
+  - *Decision:* Time slots are only generated *after* a doctor and date are selected.
+  - *Trade-off:* Requires an extra API call during the form-filling process, but guarantees that the slots shown are 100% accurate to that specific doctor's daily shift.
+
+- **Strict Working Hours Constraints:**
+  - *Decision:* Added strict validation when creating a doctor to ensure working days cannot be saved without explicitly defined working hours.
+  - *Trade-off:* Makes the doctor creation payload slightly more complex, but entirely prevents edge-case errors where a doctor appears available on a day but has no bookable slots.
+
+- **Frontend Testing Template:**
+  - *Decision:* Included a frontend template alongside the backend API.
+  - *Trade-off:* Adds minor overhead to a strictly backend repository, but is invaluable for immediate visual endpoint testing and UX validation.
+
+## Future Considerations
+
+If the system later expands to multiple clinical branches, a `ClinicalCenter` model can be introduced and connected to doctor schedules and appointments.
