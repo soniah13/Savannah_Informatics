@@ -1,6 +1,13 @@
 from django.db import transaction
 from rest_framework import serializers
-from .models import Appointment, Doctor, DoctorWorkingHours, Patient
+from .models import (
+    Appointment,
+    ClinicalService,
+    Doctor,
+    DoctorWorkingHours,
+    Patient,
+    Speciality,
+)
 from .services.availability import get_doctor_available_slots
 from .services.bookings import create_appointment, reschedule_appointment
 from .exceptions import BookingError
@@ -13,12 +20,17 @@ class PatientSerializer(serializers.ModelSerializer):
 
 class DoctorSerializer(serializers.ModelSerializer):
     working_hours = serializers.SerializerMethodField()
+    specialities = serializers.PrimaryKeyRelatedField(
+        source='Specialities',
+        many=True,
+        queryset=Speciality.objects.all(),
+    )
 
     class Meta:
         model = Doctor
         fields = [
             'id', 'full_name', 'email', 'phone_number', 'is_active',
-            'working_hours',
+            'specialities', 'working_hours',
         ]
 
     def get_working_hours(self, doctor):
@@ -27,6 +39,12 @@ class DoctorSerializer(serializers.ModelSerializer):
         ).data
 
     def validate(self, attrs):
+        specialities = attrs.get('Specialities')
+        if specialities is not None and not specialities:
+            raise serializers.ValidationError({
+                'specialities': 'Add at least one speciality for this doctor.'
+            })
+
         schedule = self.initial_data.get('working_hours')
         if schedule is None:
             return attrs
@@ -44,7 +62,9 @@ class DoctorSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         schedule = validated_data.pop('working_hours', [])
+        specialities = validated_data.pop('Specialities', [])
         doctor = Doctor.objects.create(**validated_data)
+        doctor.Specialities.set(specialities)
         DoctorWorkingHours.objects.bulk_create(
             [DoctorWorkingHours(doctor=doctor, **item) for item in schedule]
         )
@@ -53,7 +73,14 @@ class DoctorSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         schedule = validated_data.pop('working_hours', None)
+        specialities = validated_data.pop('Specialities', None)
         doctor = super().update(instance, validated_data)
+        if specialities is not None:
+            if not specialities:
+                raise serializers.ValidationError({
+                    'specialities': 'Add at least one speciality for this doctor.'
+                })
+            doctor.Specialities.set(specialities)
         if schedule is not None:
             doctor.working_hours.all().delete()
             DoctorWorkingHours.objects.bulk_create(
@@ -99,12 +126,34 @@ class DoctorWorkingHoursSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+
+class SpecialitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Speciality
+        fields = ['id', 'speciality_name', 'speciality_description']
+
+
+class ClinicalServiceSerializer(serializers.ModelSerializer):
+    speciality_name = serializers.CharField(
+        source='speciality.speciality_name', read_only=True
+    )
+
+    class Meta:
+        model = ClinicalService
+        fields = [
+            'id', 'service_name', 'speciality', 'speciality_name',
+            'service_description',
+        ]
+
 class BookAppointmentSerializer(serializers.Serializer):
     full_name=serializers.CharField(max_length=200)
     email=serializers.EmailField()
     phone_number=serializers.CharField(max_length=20)
     address=serializers.CharField()
 
+    clinical_service = serializers.PrimaryKeyRelatedField(
+        queryset=ClinicalService.objects.select_related('speciality')
+    )
     doctor_name = serializers.CharField()
     appointment_date = serializers.DateField()
     appointment_time = serializers.TimeField()
@@ -118,6 +167,12 @@ class BookAppointmentSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         doctor = attrs['doctor_name']
+        clinical_service = attrs['clinical_service']
+        if not doctor.Specialities.filter(pk=clinical_service.speciality_id).exists():
+            raise serializers.ValidationError({
+                'doctor_name': 'This doctor does not provide the selected service.'
+            })
+
         available_slots = get_doctor_available_slots(
             doctor, attrs['appointment_date']
         )
@@ -131,10 +186,12 @@ class BookAppointmentSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         doctor = validated_data.pop('doctor_name')
+        clinical_service = validated_data.pop('clinical_service')
 
         try:
             appointment = create_appointment(
                 doctor=doctor,
+                clinical_service=clinical_service,
                 full_name=validated_data.pop('full_name'),
                 email=validated_data.pop('email'),
                 phone_number=validated_data.pop('phone_number'),
@@ -151,11 +208,14 @@ class BookAppointmentSerializer(serializers.Serializer):
 class AppointmentListSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.full_name', read_only=True)
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    service_name = serializers.CharField(
+        source='clinical_service.service_name', read_only=True
+    )
     
     class Meta:
         model = Appointment
         fields = [
-            'patient_name', 'doctor_name', 'appointment_date',
+            'patient_name', 'doctor_name', 'service_name', 'appointment_date',
             'appointment_time', 'additional_information', 'cancelled_at',
             'cancellation_reason', 'is_rescheduled', 'created_at',
         ]
@@ -166,9 +226,15 @@ class AppointmentListSerializer(serializers.ModelSerializer):
 # serializer that makes doctors name readable and gives appoinment booking response cleaner
 class AppointmentResponseSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source="doctor.full_name", read_only=True)
+    service_name = serializers.CharField(
+        source='clinical_service.service_name', read_only=True
+    )
     class Meta:
         model = Appointment
-        fields = ['id', 'appointment_date', 'appointment_time', 'doctor_name', "is_rescheduled", 'cancelled_at']
+        fields = [
+            'id', 'appointment_date', 'appointment_time', 'doctor_name',
+            'service_name', 'is_rescheduled', 'cancelled_at',
+        ]
 
 class CancelAppointmentSerializer(serializers.Serializer):
     reason = serializers.CharField(required=True, min_length=5, error_messages={

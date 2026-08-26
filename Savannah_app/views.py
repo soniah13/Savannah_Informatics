@@ -4,16 +4,25 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .exceptions import BookingError
-from .models import Appointment, Doctor, DoctorWorkingHours, Patient
+from .models import (
+    Appointment,
+    ClinicalService,
+    Doctor,
+    DoctorWorkingHours,
+    Patient,
+    Speciality,
+)
 from .serializers import (
     AppointmentListSerializer,
     AppointmentResponseSerializer,
     BookAppointmentSerializer,
     CancelAppointmentSerializer,
+    ClinicalServiceSerializer,
     DoctorSerializer,
     DoctorWorkingHoursSerializer,
     PatientSerializer,
     RescheduleAppointmentSerializer,
+    SpecialitySerializer,
 )
 from .services.availability import get_doctor_available_slots
 from .services.bookings import cancel_appointment
@@ -106,6 +115,18 @@ class DoctorViewSet(viewsets.ModelViewSet):
 class PatientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Patient.objects.all().order_by('full_name')
     serializer_class = PatientSerializer
+
+
+class SpecialityViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Speciality.objects.all().order_by('speciality_name')
+    serializer_class = SpecialitySerializer
+
+
+class ClinicalServiceViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ClinicalService.objects.select_related('speciality').all().order_by(
+        'service_name'
+    )
+    serializer_class = ClinicalServiceSerializer
 
 
 class DoctorWorkingHoursViewSet(viewsets.ModelViewSet):

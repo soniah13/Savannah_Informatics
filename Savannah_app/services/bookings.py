@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db import IntegrityError, transaction
-from ..models import Appointment, Patient
+from ..models import Appointment, ClinicalService, Patient
 from .availability import is_bookable_time, Doctor_is_available_during_slot, doctor_has_conflicts
 from ..exceptions import AppointmentCancelledError, ConflictError, InvalidBookingError, SlotUnavailableError
 
@@ -31,6 +31,7 @@ def create_appointment(
     phone_number,
     address,
     doctor,
+    clinical_service: ClinicalService,
     appointment_date,
     appointment_time,
     additional_information="",
@@ -59,6 +60,7 @@ def create_appointment(
         appointment = Appointment.objects.create(
             patient=patient,
             doctor=doctor,
+            clinical_service=clinical_service,
             appointment_date=appointment_date,
             appointment_time=appointment_time,
             additional_information=additional_information,

@@ -65,6 +65,13 @@ class DoctorWorkingHours(models.Model):
 class Appointment(models.Model):
     patient= models.ForeignKey(Patient, on_delete=models.PROTECT,related_name='appointments')
     doctor = models.ForeignKey(Doctor, on_delete=models.PROTECT, related_name='appointments')
+    clinical_service = models.ForeignKey(
+        ClinicalService,
+        on_delete=models.PROTECT,
+        related_name='appointments',
+        null=True,
+        blank=True,
+    )
     appointment_date=models.DateField()
     appointment_time=models.TimeField()
     additional_information=models.TextField(blank=True)
