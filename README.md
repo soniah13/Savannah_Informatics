@@ -1,7 +1,7 @@
 # Clinical Booking System
 
 ## Deployment & Pipeline
-
+- **Deployed Link:** `https://savannah-informatics-mu5p.onrender.com/`
 - **Deployment Branch:** The `main` branch triggers the deployment automatically upon a successful merge or push.
 - **CI/CD Pipeline:** The pipeline automatically runs on every push to `main`. It sets up the Python environment (Python 3.14), installs dependencies via `requirements.txt`, runs database migrations, and executes the automated test suite to ensure no breaking changes are introduced. Once tests pass, the pipeline deploys the latest code to the production environment.
 
